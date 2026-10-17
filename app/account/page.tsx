@@ -73,7 +73,7 @@ export default async function AccountPage() {
           </p>
           <h2 className="font-display mt-4 text-3xl sm:text-4xl">Raffle entries</h2>
           <p className="mt-4 max-w-xl text-zinc-400">
-            Draws you have entered. Confirmation email sends when Resend is configured.
+            Draws you have entered. You should receive a confirmation email after each entry.
           </p>
 
           {ticketsError ? (

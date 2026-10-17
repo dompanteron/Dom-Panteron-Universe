@@ -1,3 +1,4 @@
+import { sendResendEmail } from "@/lib/email/resend";
 import { formatProductPrice } from "@/lib/shop/format-price";
 
 type SendProductOrderEmailInput = {
@@ -13,13 +14,6 @@ type SendProductOrderEmailInput = {
 };
 
 export async function sendProductOrderEmail(input: SendProductOrderEmailInput) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
-
-  if (!apiKey || !from) {
-    return { sent: false as const, reason: "Email not configured" };
-  }
-
   const greeting = input.memberName ? input.memberName : "there";
   const total = formatProductPrice(input.totalPrice, input.currency);
 
@@ -38,26 +32,11 @@ export async function sendProductOrderEmail(input: SendProductOrderEmailInput) {
     </div>
   `;
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      from,
-      to: [input.to],
-      subject: input.paid
-        ? `Payment confirmed — ${input.productTitle}`
-        : `Order received — ${input.productTitle}`,
-      html
-    })
+  return sendResendEmail({
+    to: input.to,
+    subject: input.paid
+      ? `Payment confirmed — ${input.productTitle}`
+      : `Order received — ${input.productTitle}`,
+    html
   });
-
-  if (!response.ok) {
-    const text = await response.text();
-    return { sent: false as const, reason: text || "Resend request failed" };
-  }
-
-  return { sent: true as const };
 }

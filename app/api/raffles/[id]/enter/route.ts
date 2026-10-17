@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
+import { notifyAdminRaffleEntry } from "@/lib/email/send-admin-notification";
 import { sendRaffleEntryEmail } from "@/lib/email/send-raffle-entry";
 import { ensureCurrentMember } from "@/lib/members";
 import { sumMemberRaffleEntries } from "@/lib/raffle-entries";
@@ -130,6 +131,15 @@ export async function POST(
     quantity,
     yourTotalEntries: yourEntries,
     raffleUrl: `${getSiteUrl()}/raffles/${params.id}`
+  });
+
+  void notifyAdminRaffleEntry({
+    memberName: member.full_name,
+    memberEmail: member.email,
+    raffleTitle: raffle.title,
+    quantity,
+    yourTotalEntries: yourEntries,
+    raffleId: params.id
   });
 
   return NextResponse.json({

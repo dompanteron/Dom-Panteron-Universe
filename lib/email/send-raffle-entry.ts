@@ -1,3 +1,4 @@
+import { sendResendEmail } from "@/lib/email/resend";
 import { formatRaffleDrawDate } from "@/lib/raffles";
 
 type SendRaffleEntryEmailInput = {
@@ -11,13 +12,6 @@ type SendRaffleEntryEmailInput = {
 };
 
 export async function sendRaffleEntryEmail(input: SendRaffleEntryEmailInput) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
-
-  if (!apiKey || !from) {
-    return { sent: false as const, reason: "Email not configured" };
-  }
-
   const greeting = input.memberName ? input.memberName : "there";
   const subject = `You're in — ${input.raffleTitle}`;
   const html = `
@@ -32,24 +26,5 @@ export async function sendRaffleEntryEmail(input: SendRaffleEntryEmailInput) {
     </div>
   `;
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      from,
-      to: [input.to],
-      subject,
-      html
-    })
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    return { sent: false as const, reason: text || "Resend request failed" };
-  }
-
-  return { sent: true as const };
+  return sendResendEmail({ to: input.to, subject, html });
 }

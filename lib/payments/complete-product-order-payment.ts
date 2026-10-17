@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import { notifyAdminShopOrder } from "@/lib/email/send-admin-notification";
 import { sendProductOrderEmail } from "@/lib/email/send-product-order";
 import { getSiteUrl } from "@/lib/site-url";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -13,7 +14,22 @@ type OrderWithProduct = {
   currency: string;
   status: string;
   products: { slug: string; title: string } | { slug: string; title: string }[] | null;
+  shipping_address: string | null;
+  shipping_city: string | null;
+  shipping_postal_code: string | null;
+  shipping_country: string | null;
 };
+
+function shippingSummary(order: OrderWithProduct) {
+  return [
+    order.shipping_address,
+    order.shipping_city,
+    order.shipping_postal_code,
+    order.shipping_country
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
 
 export async function completeProductOrderPayment(input: {
   orderId?: string | null;
@@ -34,7 +50,7 @@ export async function completeProductOrderPayment(input: {
       .eq("status", "pending")
       .eq(match.column, match.value)
       .select(
-        "id, customer_name, customer_email, size, quantity, total_price, currency, status, products(slug, title)"
+        "id, customer_name, customer_email, size, quantity, total_price, currency, status, shipping_address, shipping_city, shipping_postal_code, shipping_country, products(slug, title)"
       )
       .maybeSingle();
   }
@@ -78,6 +94,19 @@ export async function completeProductOrderPayment(input: {
       paid: true
     });
   }
+
+  void notifyAdminShopOrder({
+    orderId: order.id,
+    customerName: order.customer_name,
+    customerEmail: order.customer_email,
+    productTitle: product?.title ?? "Product",
+    size: order.size,
+    quantity: order.quantity,
+    totalPrice: Number(order.total_price),
+    currency: order.currency,
+    paid: true,
+    shippingSummary: shippingSummary(order) || undefined
+  });
 
   return { completed: true as const, orderId: order.id };
 }

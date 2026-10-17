@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
+import { notifyAdminShopOrder } from "@/lib/email/send-admin-notification";
 import { sendProductOrderEmail } from "@/lib/email/send-product-order";
 import { ensureCurrentMember } from "@/lib/members";
 import { createSumUpHostedCheckout } from "@/lib/payments/sumup-api";
@@ -161,6 +162,27 @@ export async function POST(
     totalPrice,
     currency,
     productUrl: `${siteUrl}/products/${product.slug}`
+  });
+
+  void notifyAdminShopOrder({
+    orderId: order.id,
+    customerName,
+    customerEmail,
+    productTitle: product.title,
+    size,
+    quantity,
+    totalPrice,
+    currency,
+    paid: false,
+    shippingSummary: [
+      body.shipping_address,
+      body.shipping_city,
+      body.shipping_postal_code,
+      body.shipping_country
+    ]
+      .map((part) => part?.trim())
+      .filter(Boolean)
+      .join(", ")
   });
 
   return NextResponse.json({
