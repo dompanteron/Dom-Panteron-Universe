@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #050508;
+  color: #ffffff;
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes home-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes home-haze {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translate3d(2%, -3%, 0) scale(1.06);
+    opacity: 1;
+  }
+}
+
+.home-rise {
+  animation: home-rise 0.85s ease-out both;
+}
+
+.home-rise-delay-1 {
+  animation-delay: 0.12s;
+}
+
+.home-rise-delay-2 {
+  animation-delay: 0.24s;
+}
+
+.home-rise-delay-3 {
+  animation-delay: 0.36s;
+}
+
+.home-haze {
+  animation: home-haze 14s ease-in-out infinite;
+}
+
+.home-haze-delayed {
+  animation: home-haze 18s ease-in-out infinite reverse;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-rise,
+  .home-haze,
+  .home-haze-delayed {
+    animation: none;
+  }
+}

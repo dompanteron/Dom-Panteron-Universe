@@ -1,0 +1,98 @@
+const STATUSES = new Set(["draft", "active", "ended"]);
+
+export type RaffleInput = {
+  title: string;
+  subtitle: string | null;
+  description: string | null;
+  ticket_price: number;
+  max_entries: number;
+  draw_date: string;
+  status: string;
+};
+
+export function parseRaffleBody(body: {
+  title?: string;
+  subtitle?: string;
+  description?: string;
+  ticket_price?: number | string;
+  max_entries?: number | string;
+  draw_date?: string;
+  status?: string;
+}): { ok: true; data: RaffleInput } | { ok: false; error: string } {
+  const title = body.title?.trim();
+  const drawDate = body.draw_date?.trim();
+  const status = body.status?.trim() || "draft";
+
+  if (!title || !drawDate) {
+    return { ok: false, error: "Title and draw date are required." };
+  }
+
+  if (!STATUSES.has(status)) {
+    return { ok: false, error: "Status must be draft, active, or ended." };
+  }
+
+  const ticketPrice = Number(body.ticket_price ?? 5);
+  const maxEntries = Number(body.max_entries ?? 100);
+
+  if (!Number.isFinite(ticketPrice) || ticketPrice < 0) {
+    return { ok: false, error: "Ticket price must be a valid number." };
+  }
+
+  if (!Number.isInteger(maxEntries) || maxEntries < 1) {
+    return { ok: false, error: "Max entries must be a whole number of at least 1." };
+  }
+
+  const parsedDate = new Date(drawDate);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return { ok: false, error: "Draw date is invalid." };
+  }
+
+  return {
+    ok: true,
+    data: {
+      title,
+      subtitle: body.subtitle?.trim() || null,
+      description: body.description?.trim() || null,
+      ticket_price: ticketPrice,
+      max_entries: maxEntries,
+      draw_date: parsedDate.toISOString(),
+      status
+    }
+  };
+}
+
+export function toDatetimeLocal(iso: string) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+export function revalidateRafflePaths() {
+  return ["/admin/raffles", "/raffles", "/admin"] as const;
+}
+
+export type PublicRaffle = {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  description: string | null;
+  ticket_price: number;
+  max_entries: number;
+  total_entries: number;
+  ticket_limit_per_user: number | null;
+  draw_date: string;
+  status: string;
+};
+
+export function formatRaffleDrawDate(value: string, withTime = false) {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    ...(withTime ? { hour: "2-digit", minute: "2-digit" as const } : {})
+  }).format(new Date(value));
+}
