@@ -82,6 +82,8 @@ Apply migration `20251017120000_product_orders_sumup.sql` (`npx supabase db push
 
 **Test:** use a small amount; SumUp sandbox treats amount **11** as always failing (CocoHawaii convention).
 
+Raffle entries use the same SumUp keys when configured (`POST /api/raffles/[id]/enter` → hosted checkout → entries recorded on payment).
+
 PayPal (`NEXT_PUBLIC_PAYPAL_CLIENT_ID`) is not wired yet — SumUp first.
 
 ## Database migrations

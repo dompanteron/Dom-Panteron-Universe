@@ -3,8 +3,10 @@ import { NextResponse } from "next/server";
 import { notifyAdminRaffleEntry } from "@/lib/email/send-admin-notification";
 import { sendRaffleEntryEmail } from "@/lib/email/send-raffle-entry";
 import { ensureCurrentMember } from "@/lib/members";
-import { sumMemberRaffleEntries } from "@/lib/raffle-entries";
+import { createSumUpHostedCheckout } from "@/lib/payments/sumup-api";
+import { getSumUpCredentials, isSumUpConfigured } from "@/lib/payments/sumup-config";
 import { getSiteUrl } from "@/lib/site-url";
+import { validateRaffleEntry } from "@/lib/raffles/validate-entry";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(
@@ -23,71 +25,78 @@ export async function POST(
   const body = (await request.json().catch(() => ({}))) as { quantity?: number | string };
   const quantity = Number(body.quantity ?? 1);
 
-  if (!Number.isInteger(quantity) || quantity < 1) {
-    return NextResponse.json(
-      { ok: false, error: "Quantity must be at least 1." },
-      { status: 400 }
-    );
+  const validated = await validateRaffleEntry({
+    raffleId: params.id,
+    memberId: member.id,
+    quantity
+  });
+
+  if (!validated.ok) {
+    return NextResponse.json({ ok: false, error: validated.error }, { status: 400 });
   }
 
+  const { raffle, existingEntries } = validated;
+  const unitPrice = Number(raffle.ticket_price);
+  const totalPrice = unitPrice * quantity;
   const admin = createAdminClient();
-  const { data: raffle, error: raffleError } = await admin
-    .from("raffles")
-    .select(
-      "id, title, draw_date, status, ticket_price, max_entries, total_entries, ticket_limit_per_user"
-    )
-    .eq("id", params.id)
-    .maybeSingle();
+  const sumupCreds = getSumUpCredentials();
 
-  if (raffleError || !raffle) {
-    return NextResponse.json({ ok: false, error: "Raffle not found." }, { status: 404 });
-  }
+  if (isSumUpConfigured() && sumupCreds && totalPrice > 0) {
+    const { data: checkoutRow, error: checkoutInsertError } = await admin
+      .from("raffle_checkouts")
+      .insert({
+        raffle_id: params.id,
+        member_id: member.id,
+        quantity,
+        unit_price: unitPrice,
+        total_price: totalPrice,
+        currency: "EUR",
+        status: "pending"
+      })
+      .select("id")
+      .single();
 
-  if (raffle.status !== "active") {
-    return NextResponse.json(
-      { ok: false, error: "This draw is not open for entries." },
-      { status: 400 }
-    );
-  }
+    if (checkoutInsertError || !checkoutRow) {
+      return NextResponse.json(
+        { ok: false, error: checkoutInsertError?.message || "Could not start checkout." },
+        { status: 500 }
+      );
+    }
 
-  const spotsLeft = raffle.max_entries - raffle.total_entries;
-  if (spotsLeft <= 0) {
-    return NextResponse.json({ ok: false, error: "This draw is full." }, { status: 400 });
-  }
+    const siteUrl = getSiteUrl();
 
-  if (quantity > spotsLeft) {
-    return NextResponse.json(
-      { ok: false, error: `Only ${spotsLeft} spot${spotsLeft === 1 ? "" : "s"} left.` },
-      { status: 400 }
-    );
-  }
+    try {
+      const sumup = await createSumUpHostedCheckout({
+        apiKey: sumupCreds.apiKey,
+        merchantCode: sumupCreds.merchantCode,
+        amount: totalPrice,
+        currency: "EUR",
+        checkoutReference: checkoutRow.id,
+        description: `${raffle.title} · ${quantity} entr${quantity === 1 ? "y" : "ies"}`,
+        redirectUrl: `${siteUrl}/raffles/checkout/${checkoutRow.id}/complete?payment_return=1`,
+        returnUrl: `${siteUrl}/api/webhooks/sumup`
+      });
 
-  let existingEntries = 0;
-  try {
-    existingEntries = await sumMemberRaffleEntries(params.id, member.id);
-  } catch (error) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: error instanceof Error ? error.message : "Could not read your entries."
-      },
-      { status: 500 }
-    );
-  }
+      await admin
+        .from("raffle_checkouts")
+        .update({ sumup_checkout_id: sumup.id })
+        .eq("id", checkoutRow.id);
 
-  if (raffle.ticket_limit_per_user != null) {
-    const limit = Number(raffle.ticket_limit_per_user);
-    if (existingEntries + quantity > limit) {
-      const remaining = Math.max(0, limit - existingEntries);
+      return NextResponse.json({
+        ok: true,
+        paymentMode: "sumup",
+        checkoutId: sumup.id,
+        checkoutUrl: sumup.hosted_checkout_url,
+        message: "Redirecting to payment…"
+      });
+    } catch (error) {
+      await admin.from("raffle_checkouts").delete().eq("id", checkoutRow.id);
       return NextResponse.json(
         {
           ok: false,
-          error:
-            remaining === 0
-              ? "You reached your entry limit for this draw."
-              : `You can add at most ${remaining} more entr${remaining === 1 ? "y" : "ies"}.`
+          error: error instanceof Error ? error.message : "Payment setup failed."
         },
-        { status: 400 }
+        { status: 500 }
       );
     }
   }
@@ -96,7 +105,7 @@ export async function POST(
     raffle_id: params.id,
     member_id: member.id,
     quantity,
-    total_paid: 0
+    total_paid: totalPrice
   });
 
   if (insertError) {
@@ -144,6 +153,7 @@ export async function POST(
 
   return NextResponse.json({
     ok: true,
+    paymentMode: "manual",
     yourEntries,
     totalEntries: raffle.total_entries + quantity
   });

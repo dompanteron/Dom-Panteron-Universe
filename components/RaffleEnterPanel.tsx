@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+const RAFFLE_CHECKOUT_STORAGE_KEY = "dom_panteron_raffle_sumup_checkout_id";
+
 type RaffleEnterPanelProps = {
   raffleId: string;
   ticketPrice: number;
@@ -12,6 +14,7 @@ type RaffleEnterPanelProps = {
   ticketLimitPerUser: number | null;
   isFull: boolean;
   signedIn: boolean;
+  paymentsEnabled: boolean;
 };
 
 export default function RaffleEnterPanel({
@@ -21,7 +24,8 @@ export default function RaffleEnterPanel({
   yourEntries,
   ticketLimitPerUser,
   isFull,
-  signedIn
+  signedIn,
+  paymentsEnabled
 }: RaffleEnterPanelProps) {
   const router = useRouter();
   const maxQuantity = useMemo(() => {
@@ -42,6 +46,8 @@ export default function RaffleEnterPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [localYourEntries, setLocalYourEntries] = useState(yourEntries);
 
+  const lineTotal = ticketPrice * quantity;
+
   async function enter() {
     setBusy(true);
     setError(null);
@@ -57,17 +63,32 @@ export default function RaffleEnterPanel({
         ok: boolean;
         error?: string;
         yourEntries?: number;
+        checkoutUrl?: string;
+        checkoutId?: string;
+        paymentMode?: string;
       };
 
       if (!response.ok || !payload.ok) {
         throw new Error(payload.error || "Could not enter draw");
       }
 
+      if (payload.paymentMode === "sumup" && payload.checkoutUrl) {
+        if (payload.checkoutId) {
+          sessionStorage.setItem(RAFFLE_CHECKOUT_STORAGE_KEY, payload.checkoutId);
+        }
+        window.location.assign(payload.checkoutUrl);
+        return;
+      }
+
       if (payload.yourEntries != null) {
         setLocalYourEntries(payload.yourEntries);
       }
 
-      setMessage("You're in. No payment taken yet.");
+      setMessage(
+        paymentsEnabled
+          ? "You're in."
+          : "You're in. Payment will be arranged separately if required."
+      );
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not enter draw");
@@ -90,9 +111,8 @@ export default function RaffleEnterPanel({
   return (
     <div className="mt-8 space-y-4 border-t border-white/10 pt-6">
       <p className="text-sm text-zinc-300">
-        You have{" "}
-        <span className="text-panteron-violet">{localYourEntries}</span>{" "}
-        entr{localYourEntries === 1 ? "y" : "ies"} in this draw.
+        You have <span className="text-panteron-violet">{localYourEntries}</span> entr
+        {localYourEntries === 1 ? "y" : "ies"} in this draw.
       </p>
 
       {isFull ? (
@@ -103,7 +123,7 @@ export default function RaffleEnterPanel({
         <>
           <label className="block">
             <span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">
-              Entries (free for now)
+              Entries
             </span>
             <select
               value={quantity}
@@ -118,7 +138,8 @@ export default function RaffleEnterPanel({
             </select>
           </label>
           <p className="text-xs text-zinc-500">
-            Listed price {ticketPrice.toFixed(2)} per entry — payment comes later.
+            {ticketPrice.toFixed(2)} EUR per entry · Total {lineTotal.toFixed(2)} EUR
+            {paymentsEnabled ? " · Pay with SumUp" : " · Manual payment for now"}
           </p>
           {error ? <p className="text-sm text-red-400">{error}</p> : null}
           {message ? <p className="text-sm text-panteron-violet">{message}</p> : null}
@@ -128,7 +149,11 @@ export default function RaffleEnterPanel({
             onClick={() => void enter()}
             className="w-full bg-panteron-purple px-5 py-3 text-sm font-medium text-white transition hover:bg-panteron-violet disabled:opacity-60"
           >
-            {busy ? "Entering…" : "Enter draw"}
+            {busy
+              ? "Continuing…"
+              : paymentsEnabled && lineTotal > 0
+                ? "Continue to payment"
+                : "Enter draw"}
           </button>
         </>
       )}

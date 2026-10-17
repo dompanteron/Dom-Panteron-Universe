@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { completeProductOrderPayment } from "@/lib/payments/complete-product-order-payment";
+import { completeRaffleCheckout } from "@/lib/payments/complete-raffle-checkout";
 import { getSumUpCredentials } from "@/lib/payments/sumup-config";
 import { fetchSumUpCheckout } from "@/lib/payments/sumup-api";
 
@@ -38,11 +39,18 @@ export async function POST(request: Request) {
 
     const reference = checkout.checkout_reference ?? null;
 
-    await completeProductOrderPayment({
+    const productResult = await completeProductOrderPayment({
       orderId: reference,
       checkoutId,
       paymentReference: checkoutId
     });
+
+    if (!productResult.completed) {
+      await completeRaffleCheckout({
+        checkoutId: reference,
+        sumupCheckoutId: checkoutId
+      });
+    }
 
     return NextResponse.json({ received: true });
   } catch (error) {

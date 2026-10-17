@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import RaffleEnterPanel from "@/components/RaffleEnterPanel";
 import { ensureCurrentMember } from "@/lib/members";
+import { isSumUpConfigured } from "@/lib/payments/sumup-config";
 import { sumMemberRaffleEntries } from "@/lib/raffle-entries";
 import { formatRaffleDrawDate, type PublicRaffle } from "@/lib/raffles";
 import { createClient as createServerClient } from "@/lib/supabase/server";
@@ -47,6 +48,7 @@ export default async function RaffleDetailPage({ params }: Props) {
   const { member } = await ensureCurrentMember();
   const spotsLeft = Math.max(0, raffle.max_entries - raffle.total_entries);
   const isFull = spotsLeft === 0;
+  const paymentsEnabled = isSumUpConfigured();
 
   let yourEntries = 0;
   if (member) {
@@ -137,6 +139,7 @@ export default async function RaffleDetailPage({ params }: Props) {
               ticketLimitPerUser={raffle.ticket_limit_per_user}
               isFull={isFull}
               signedIn={Boolean(member)}
+              paymentsEnabled={paymentsEnabled}
             />
           </aside>
         </div>

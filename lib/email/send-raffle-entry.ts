@@ -1,4 +1,5 @@
 import { sendResendEmail } from "@/lib/email/resend";
+import { formatProductPrice } from "@/lib/shop/format-price";
 import { formatRaffleDrawDate } from "@/lib/raffles";
 
 type SendRaffleEntryEmailInput = {
@@ -9,6 +10,9 @@ type SendRaffleEntryEmailInput = {
   quantity: number;
   yourTotalEntries: number;
   raffleUrl: string;
+  paid?: boolean;
+  totalPaid?: number;
+  currency?: string;
 };
 
 export async function sendRaffleEntryEmail(input: SendRaffleEntryEmailInput) {
@@ -20,7 +24,11 @@ export async function sendRaffleEntryEmail(input: SendRaffleEntryEmailInput) {
       <p>You added <strong>${input.quantity}</strong> entr${input.quantity === 1 ? "y" : "ies"} to <strong>${input.raffleTitle}</strong>.</p>
       <p>You now have <strong>${input.yourTotalEntries}</strong> entr${input.yourTotalEntries === 1 ? "y" : "ies"} in this draw.</p>
       <p>Draw: ${formatRaffleDrawDate(input.drawDate, true)}</p>
-      <p>No payment was taken yet — this confirms your place in the circle.</p>
+      <p>${
+        input.paid && input.totalPaid != null
+          ? `Payment received: ${formatProductPrice(input.totalPaid, input.currency ?? "EUR")}.`
+          : "No payment was taken yet — this confirms your place in the circle."
+      }</p>
       <p><a href="${input.raffleUrl}">View the draw</a></p>
       <p>Dom Panteron Universe</p>
     </div>
