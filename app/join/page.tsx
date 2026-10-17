@@ -7,7 +7,13 @@ export const metadata: Metadata = {
     "Become a member of Dom Panteron Universe — early access, raffles, and the next wave."
 };
 
-export default function JoinPage() {
+export default function JoinPage({
+  searchParams
+}: {
+  searchParams?: { error?: string; error_code?: string };
+}) {
+  const initialError = searchParams?.error_code ?? searchParams?.error ?? null;
+
   return (
     <main className="text-white">
       <section className="relative isolate overflow-hidden bg-panteron-black">
@@ -32,7 +38,7 @@ export default function JoinPage() {
           </div>
 
           <div className="home-rise home-rise-delay-3 rounded-none border border-white/10 bg-panteron-black/50 p-6 sm:p-8">
-            <JoinForm />
+            <JoinForm initialError={initialError} />
           </div>
         </div>
       </section>

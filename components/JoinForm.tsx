@@ -6,13 +6,22 @@ import { createClient } from "@/lib/supabase/client";
 
 type Mode = "signup" | "signin";
 
-export default function JoinForm() {
+const joinErrorMessages: Record<string, string> = {
+  auth: "Sign-in link failed. Request a new confirmation email or sign in with password.",
+  access_denied: "That link expired or was already used. Sign in with your password instead.",
+  otp_expired: "Email link expired. Sign in with your password, or sign up again for a new link."
+};
+
+export default function JoinForm({ initialError }: { initialError?: string | null }) {
   const [mode, setMode] = useState<Mode>("signup");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() => {
+    if (!initialError) return null;
+    return joinErrorMessages[initialError] ?? joinErrorMessages.auth;
+  });
   const [message, setMessage] = useState<string | null>(null);
 
   const supabase = useMemo(() => createClient(), []);
@@ -50,7 +59,7 @@ export default function JoinForm() {
           password,
           options: {
             data: { full_name: trimmedName || undefined },
-            emailRedirectTo: `${window.location.origin}/auth/callback?next=/join`
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=/account`
           }
         });
 

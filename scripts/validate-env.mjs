@@ -20,6 +20,13 @@ const missingRecommended = optionalButRecommended.filter(
 if (missing.length > 0) {
   console.error("Missing required environment variables:");
   missing.forEach((key) => console.error(`- ${key}`));
+  const typoKeys = Object.keys(process.env).filter(
+    (key) => key.includes("SUPABASE_URL") && key !== "NEXT_PUBLIC_SUPABASE_URL"
+  );
+  if (typoKeys.length > 0) {
+    console.error("Possible typo in .env (rename to NEXT_PUBLIC_SUPABASE_URL):");
+    typoKeys.forEach((key) => console.error(`- ${key}`));
+  }
   process.exit(1);
 }
 
