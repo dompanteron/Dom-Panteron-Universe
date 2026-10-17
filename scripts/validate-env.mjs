@@ -36,3 +36,12 @@ if (missingRecommended.length > 0) {
   console.warn("Missing recommended environment variables:");
   missingRecommended.forEach((key) => console.warn(`- ${key}`));
 }
+
+const sumupPartial = [
+  process.env.SUMUP_API_KEY?.trim(),
+  process.env.SUMUP_MERCHANT_CODE?.trim()
+].filter(Boolean).length;
+
+if (sumupPartial === 1) {
+  console.warn("SumUp: set both SUMUP_API_KEY and SUMUP_MERCHANT_CODE or leave both empty.");
+}

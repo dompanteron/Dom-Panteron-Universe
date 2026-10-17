@@ -66,10 +66,21 @@ export default function ProductPurchasePanel({
         ok: boolean;
         error?: string;
         message?: string;
+        checkoutUrl?: string;
+        checkoutId?: string;
+        paymentMode?: string;
       };
 
       if (!response.ok || !payload.ok) {
         throw new Error(payload.error || "Could not place order");
+      }
+
+      if (payload.paymentMode === "sumup" && payload.checkoutUrl) {
+        if (payload.checkoutId) {
+          sessionStorage.setItem("dom_panteron_sumup_checkout_id", payload.checkoutId);
+        }
+        window.location.assign(payload.checkoutUrl);
+        return;
       }
 
       setMessage(payload.message ?? "Order request received.");
@@ -104,8 +115,8 @@ export default function ProductPurchasePanel({
         </p>
       ) : null}
       <p className="mt-2 text-sm text-zinc-400">
-        Ready-made piece — choose size and submit your order. Payment is confirmed separately
-        for now.
+        Ready-made piece — choose size and checkout. Card payment via SumUp when configured;
+        otherwise we confirm payment manually.
       </p>
 
       {!signedIn ? (
@@ -243,7 +254,7 @@ export default function ProductPurchasePanel({
             disabled={busy}
             className="w-full bg-panteron-purple px-5 py-3 text-sm font-medium text-white transition hover:bg-panteron-violet disabled:opacity-60"
           >
-            {busy ? "Submitting…" : "Place order request"}
+            {busy ? "Continuing…" : "Continue to checkout"}
           </button>
         </form>
       )}

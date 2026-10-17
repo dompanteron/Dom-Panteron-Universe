@@ -61,6 +61,23 @@ supabase init
 supabase link --project-ref jrdoyghmqyzfprldnvky
 ```
 
+## Shop payments (SumUp)
+
+When both are set in `.env.local` / Vercel, product checkout uses **SumUp Hosted Checkout** (card). If either is missing, orders stay **manual** (pending until admin marks paid).
+
+- `SUMUP_API_KEY` — SumUp developer/API key
+- `SUMUP_MERCHANT_CODE` — merchant code from SumUp dashboard
+
+After deploy, register webhook URL in SumUp (optional but recommended):
+
+`https://YOUR-VERCEL-URL/api/webhooks/sumup`
+
+Apply migration `20251017120000_product_orders_sumup.sql` (`npx supabase db push`).
+
+**Test:** use a small amount; SumUp sandbox treats amount **11** as always failing (CocoHawaii convention).
+
+PayPal (`NEXT_PUBLIC_PAYPAL_CLIENT_ID`) is not wired yet — SumUp first.
+
 ## Database migrations
 
 This repo includes SQL migrations in `supabase/migrations`.

@@ -82,7 +82,7 @@ export default function AdminProductOrderForm({
           placeholder="SumUp, bank transfer, PayPal ID…"
         />
         <p className="mt-2 text-xs text-zinc-500">
-          Online checkout is not wired yet — note how the customer paid when you mark paid.
+          SumUp payments auto-mark paid; use this field for bank transfer or manual notes.
         </p>
       </label>
       {error ? <p className="text-sm text-red-400">{error}</p> : null}

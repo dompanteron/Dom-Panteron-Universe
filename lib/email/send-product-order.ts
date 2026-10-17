@@ -9,6 +9,7 @@ type SendProductOrderEmailInput = {
   totalPrice: number;
   currency: string;
   productUrl: string;
+  paid?: boolean;
 };
 
 export async function sendProductOrderEmail(input: SendProductOrderEmailInput) {
@@ -25,9 +26,13 @@ export async function sendProductOrderEmail(input: SendProductOrderEmailInput) {
   const html = `
     <div style="font-family: system-ui, sans-serif; color: #111; line-height: 1.5;">
       <p>Hi ${greeting},</p>
-      <p>We received your order request for <strong>${input.productTitle}</strong>.</p>
+      <p>We received your order for <strong>${input.productTitle}</strong>.</p>
       <p>Size: ${input.size} · Qty: ${input.quantity} · Total: ${total}</p>
-      <p>Status: <strong>pending</strong> — payment will be arranged separately. We will confirm when it is processed.</p>
+      <p>Status: <strong>${input.paid ? "paid" : "pending"}</strong>${
+        input.paid
+          ? " — thank you. We will prepare your piece for shipping."
+          : " — payment will be arranged separately. We will confirm when it is processed."
+      }</p>
       <p><a href="${input.productUrl}">View product</a></p>
       <p>Dom Panteron Universe</p>
     </div>
@@ -42,7 +47,9 @@ export async function sendProductOrderEmail(input: SendProductOrderEmailInput) {
     body: JSON.stringify({
       from,
       to: [input.to],
-      subject: `Order received — ${input.productTitle}`,
+      subject: input.paid
+        ? `Payment confirmed — ${input.productTitle}`
+        : `Order received — ${input.productTitle}`,
       html
     })
   });

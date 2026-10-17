@@ -1,8 +1,10 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { sendProductOrderEmail } from "@/lib/email/send-product-order";
-import { getSiteUrl } from "@/lib/site-url";
 import { ensureCurrentMember } from "@/lib/members";
+import { createSumUpHostedCheckout } from "@/lib/payments/sumup-api";
+import { getSumUpCredentials, isSumUpConfigured } from "@/lib/payments/sumup-config";
+import { getSiteUrl } from "@/lib/site-url";
 import { parseProductSizes } from "@/lib/shop/products";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -74,6 +76,7 @@ export async function POST(
 
   const unitPrice = Number(product.price);
   const totalPrice = unitPrice * quantity;
+  const currency = product.currency ?? "EUR";
 
   const { data: order, error: insertError } = await admin
     .from("product_orders")
@@ -86,7 +89,7 @@ export async function POST(
       quantity,
       unit_price: unitPrice,
       total_price: totalPrice,
-      currency: product.currency ?? "EUR",
+      currency,
       shipping_address: body.shipping_address?.trim() || null,
       shipping_city: body.shipping_city?.trim() || null,
       shipping_postal_code: body.shipping_postal_code?.trim() || null,
@@ -105,6 +108,50 @@ export async function POST(
 
   revalidatePath("/account");
 
+  const siteUrl = getSiteUrl();
+  const sumupCreds = getSumUpCredentials();
+
+  if (isSumUpConfigured() && sumupCreds) {
+    try {
+      const returnUrl = `${siteUrl}/api/webhooks/sumup`;
+      const redirectUrl = `${siteUrl}/shop/orders/${order.id}/complete?payment_return=1`;
+
+      const checkout = await createSumUpHostedCheckout({
+        apiKey: sumupCreds.apiKey,
+        merchantCode: sumupCreds.merchantCode,
+        amount: totalPrice,
+        currency,
+        checkoutReference: order.id,
+        description: `${product.title} (${size} × ${quantity})`,
+        redirectUrl,
+        returnUrl
+      });
+
+      await admin
+        .from("product_orders")
+        .update({ sumup_checkout_id: checkout.id })
+        .eq("id", order.id);
+
+      return NextResponse.json({
+        ok: true,
+        orderId: order.id,
+        checkoutId: checkout.id,
+        checkoutUrl: checkout.hosted_checkout_url,
+        paymentMode: "sumup",
+        message: "Redirecting to secure payment…"
+      });
+    } catch (error) {
+      await admin.from("product_orders").delete().eq("id", order.id);
+      return NextResponse.json(
+        {
+          ok: false,
+          error: error instanceof Error ? error.message : "Payment setup failed."
+        },
+        { status: 500 }
+      );
+    }
+  }
+
   void sendProductOrderEmail({
     to: customerEmail,
     memberName: customerName,
@@ -112,13 +159,14 @@ export async function POST(
     size,
     quantity,
     totalPrice,
-    currency: product.currency ?? "EUR",
-    productUrl: `${getSiteUrl()}/products/${product.slug}`
+    currency,
+    productUrl: `${siteUrl}/products/${product.slug}`
   });
 
   return NextResponse.json({
     ok: true,
     orderId: order.id,
+    paymentMode: "manual",
     message: "Order request received. We will confirm payment separately."
   });
 }
