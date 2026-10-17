@@ -28,7 +28,7 @@ export default async function AdminProductsPage() {
       <p className="mb-3 text-xs uppercase tracking-[0.35em] text-panteron-violet">Admin</p>
       <h1 className="font-display text-4xl font-semibold">Products</h1>
       <p className="mt-4 max-w-2xl text-lg text-zinc-400">
-        Ready-made pieces assigned to collections. Image URLs for now — upload bucket later.
+        Ready-made pieces assigned to collections. Upload images in the form or paste URLs.
       </p>
 
       <div className="mt-12 border border-white/10 p-6 sm:p-8">

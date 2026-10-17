@@ -61,6 +61,12 @@ supabase init
 supabase link --project-ref jrdoyghmqyzfprldnvky
 ```
 
+## Shop images (Supabase Storage)
+
+Migration `20251017200000_shop_storage.sql` creates public bucket **`shop`**. Admins upload in **Admin → Collections / Products** (max 5 MB, JPEG/PNG/WebP/GIF).
+
+Apply with `npx supabase db push` if not already applied.
+
 ## Shop payments (SumUp)
 
 When both are set in `.env.local` / Vercel, product checkout uses **SumUp Hosted Checkout** (card). If either is missing, orders stay **manual** (pending until admin marks paid).

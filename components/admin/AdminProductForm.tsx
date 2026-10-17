@@ -2,6 +2,8 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import AdminGalleryUpload from "@/components/admin/AdminGalleryUpload";
+import AdminImageUpload from "@/components/admin/AdminImageUpload";
 import { imagesToInput, sizesToInput } from "@/lib/shop/slug";
 
 export type CollectionOption = { id: string; name: string };
@@ -167,14 +169,14 @@ export default function AdminProductForm({
         <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">Sizes (comma separated)</span>
         <input value={sizes} onChange={(e) => setSizes(e.target.value)} className={fieldClass} placeholder="S, M, L, XL" />
       </label>
-      <label className="block md:col-span-2">
-        <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">Main image URL</span>
-        <input value={mainImageUrl} onChange={(e) => setMainImageUrl(e.target.value)} className={fieldClass} />
-      </label>
-      <label className="block md:col-span-2">
-        <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">Gallery URLs (one per line)</span>
-        <textarea rows={3} value={images} onChange={(e) => setImages(e.target.value)} className={fieldClass} />
-      </label>
+      <AdminImageUpload
+        label="Main image"
+        folder="products"
+        value={mainImageUrl}
+        onChange={setMainImageUrl}
+        hint="Used on collection grids and product cards."
+      />
+      <AdminGalleryUpload value={images} onChange={setImages} />
       <div className="md:col-span-2">
         {error ? <p className="mb-4 text-sm text-red-400">{error}</p> : null}
         {message ? <p className="mb-4 text-sm text-panteron-violet">{message}</p> : null}

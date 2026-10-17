@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import AdminImageUpload from "@/components/admin/AdminImageUpload";
 import { toDatetimeLocal } from "@/lib/raffles";
 
 export type CollectionFormValues = {
@@ -119,10 +120,13 @@ export default function AdminCollectionForm({
         <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">Description</span>
         <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} className={fieldClass} />
       </label>
-      <label className="block md:col-span-2">
-        <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">Cover image URL</span>
-        <input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} className={fieldClass} />
-      </label>
+      <AdminImageUpload
+        label="Cover image"
+        folder="collections"
+        value={coverUrl}
+        onChange={setCoverUrl}
+        hint="Upload to Supabase Storage or paste an external URL."
+      />
       <label className="block">
         <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">Status</span>
         <select value={status} onChange={(e) => setStatus(e.target.value)} className={`${fieldClass} bg-panteron-black`}>
