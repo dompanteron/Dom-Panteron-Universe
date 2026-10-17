@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { musicReleases } from "@/lib/catalog/music";
+import { getActiveMusicReleases } from "@/lib/music/releases";
 
 export const metadata: Metadata = {
   title: "Music | Dom Panteron Universe",
@@ -8,7 +8,16 @@ export const metadata: Metadata = {
     "Sound that raises the frequency — releases and listening space from Dom Panteron."
 };
 
-export default function MusicPage() {
+export default async function MusicPage() {
+  let releases: Awaited<ReturnType<typeof getActiveMusicReleases>> = [];
+  let loadError: string | null = null;
+
+  try {
+    releases = await getActiveMusicReleases();
+  } catch (error) {
+    loadError = error instanceof Error ? error.message : "Could not load releases.";
+  }
+
   return (
     <main className="text-white">
       <section className="relative isolate overflow-hidden bg-panteron-black">
@@ -26,8 +35,8 @@ export default function MusicPage() {
             Sound that raises the signal
           </h1>
           <p className="home-rise home-rise-delay-2 mt-6 max-w-2xl text-lg text-zinc-300 sm:text-xl">
-            Releases made to move body, mind, and field. The listening space is
-            opening — first tracks land here.
+            Releases made to move body, mind, and field. The listening space is opening — first
+            tracks land here.
           </p>
           <div className="home-rise home-rise-delay-3 mt-8">
             <Link
@@ -42,44 +51,62 @@ export default function MusicPage() {
 
       <section className="border-t border-white/10 bg-panteron-black">
         <div className="mx-auto max-w-6xl px-6 py-20 md:py-28">
-          <p className="text-xs uppercase tracking-[0.3em] text-panteron-violet">
-            Releases
-          </p>
-          <h2 className="font-display mt-4 max-w-2xl text-3xl sm:text-4xl">
-            The catalog in formation
-          </h2>
+          <p className="text-xs uppercase tracking-[0.3em] text-panteron-violet">Releases</p>
+          <h2 className="font-display mt-4 max-w-2xl text-3xl sm:text-4xl">The catalog</h2>
 
-          <ul className="mt-12 divide-y divide-white/10 border-y border-white/10">
-            {musicReleases.map((release) => (
-              <li
-                key={release.title}
-                className="grid gap-3 py-8 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_minmax(0,1.2fr)] sm:items-baseline sm:gap-6"
-              >
-                <h3 className="font-display text-2xl text-white">
-                  {release.title}
-                </h3>
-                <p className="text-sm uppercase tracking-[0.2em] text-zinc-500">
-                  {release.kind}
-                </p>
-                <p className="text-sm text-panteron-violet">{release.status}</p>
-                <p className="text-zinc-400 sm:text-right">{release.note}</p>
-              </li>
-            ))}
-          </ul>
+          {loadError ? (
+            <p className="mt-10 text-sm text-red-400">{loadError}</p>
+          ) : releases.length === 0 ? (
+            <p className="mt-10 text-zinc-400">New signals loading soon.</p>
+          ) : (
+            <ul className="mt-12 divide-y divide-white/10 border-y border-white/10">
+              {releases.map((release) => (
+                <li
+                  key={release.id}
+                  className="grid gap-4 py-8 sm:grid-cols-[auto_minmax(0,1.2fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_minmax(0,1fr)] sm:items-center sm:gap-6"
+                >
+                  {release.cover_image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={release.cover_image_url}
+                      alt=""
+                      className="h-16 w-16 border border-white/10 object-cover"
+                    />
+                  ) : (
+                    <div className="hidden h-16 w-16 border border-white/10 bg-panteron-deep sm:block" />
+                  )}
+                  <div>
+                    <h3 className="font-display text-2xl text-white">{release.title}</h3>
+                    {release.listen_url ? (
+                      <a
+                        href={release.listen_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 inline-block text-sm text-panteron-violet hover:text-white"
+                      >
+                        Listen →
+                      </a>
+                    ) : null}
+                  </div>
+                  <p className="text-sm uppercase tracking-[0.2em] text-zinc-500">{release.kind}</p>
+                  <p className="text-sm text-panteron-violet">{release.phase_label}</p>
+                  <p className="text-zinc-400 sm:text-right">{release.note}</p>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </section>
 
       <section className="border-t border-white/10 bg-panteron-deep">
         <div className="mx-auto max-w-6xl px-6 py-20 md:py-28">
-          <p className="text-xs uppercase tracking-[0.3em] text-panteron-violet">
-            Listen
-          </p>
+          <p className="text-xs uppercase tracking-[0.3em] text-panteron-violet">Listen</p>
           <h2 className="font-display mt-4 max-w-3xl text-3xl sm:text-4xl">
-            Player and streaming links come next
+            More embeds and previews soon
           </h2>
           <p className="mt-6 max-w-2xl text-lg text-zinc-300">
-            This page is ready for embeds, previews, and release pages. Until
-            the first drop goes live, join for early listening access.
+            Add streaming links in admin for each release. Join for early listening access when drops
+            go live.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
             <Link
@@ -89,10 +116,10 @@ export default function MusicPage() {
               Join the universe
             </Link>
             <Link
-              href="/clothing"
+              href="/collections"
               className="border border-white/25 px-6 py-3 text-sm font-medium text-white transition hover:border-panteron-violet hover:text-panteron-violet"
             >
-              Explore clothing
+              Explore collections
             </Link>
           </div>
         </div>

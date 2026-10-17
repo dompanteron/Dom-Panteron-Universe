@@ -25,7 +25,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Choose an image file." }, { status: 400 });
   }
 
-  const folder: ShopMediaFolder = folderRaw === "collections" ? "collections" : "products";
+  let folder: ShopMediaFolder = "products";
+  if (folderRaw === "collections") folder = "collections";
+  else if (folderRaw === "music") folder = "music";
   const validated = validateShopImageFile(file);
   if (!validated.ok) {
     return NextResponse.json({ ok: false, error: validated.error }, { status: 400 });

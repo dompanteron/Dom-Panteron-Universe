@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { musicReleases } from "@/lib/catalog/music";
 import { requireAdmin } from "@/lib/members";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -9,7 +8,13 @@ export const metadata: Metadata = {
 };
 
 async function countRows(
-  table: "members" | "raffles" | "collections" | "products" | "product_orders",
+  table:
+    | "members"
+    | "raffles"
+    | "collections"
+    | "products"
+    | "product_orders"
+    | "music_releases",
   column: string,
   value?: string
 ) {
@@ -38,6 +43,8 @@ export default async function AdminHomePage() {
   let ordersPending = 0;
   let rafflesTotal = 0;
   let rafflesActive = 0;
+  let musicTotal = 0;
+  let musicActive = 0;
   let rafflesDraft = 0;
   let loadError: string | null = null;
 
@@ -51,6 +58,8 @@ export default async function AdminHomePage() {
       productsActive,
       ordersTotal,
       ordersPending,
+      musicTotal,
+      musicActive,
       rafflesTotal,
       rafflesActive,
       rafflesDraft
@@ -63,6 +72,8 @@ export default async function AdminHomePage() {
       countRows("products", "status", "active"),
       countRows("product_orders", "id"),
       countRows("product_orders", "status", "pending"),
+      countRows("music_releases", "id"),
+      countRows("music_releases", "status", "active"),
       countRows("raffles", "id"),
       countRows("raffles", "status", "active"),
       countRows("raffles", "status", "draft")
@@ -99,8 +110,8 @@ export default async function AdminHomePage() {
     {
       href: "/admin/music",
       label: "Music",
-      value: musicReleases.length,
-      detail: "catalog releases"
+      value: musicTotal,
+      detail: `${musicActive} active`
     },
     {
       href: "/admin/raffles",
@@ -118,7 +129,7 @@ export default async function AdminHomePage() {
       <h1 className="font-display text-4xl font-semibold">Control room</h1>
       <p className="mt-4 max-w-2xl text-lg text-zinc-400">
         Signed in as {member.full_name || member.email}. Live counts from the
-        universe; music catalog is still static until releases move into the database.
+        universe.
       </p>
 
       {loadError ? (
