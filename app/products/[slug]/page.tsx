@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import ProductGallery from "@/components/shop/ProductGallery";
 import ProductPurchasePanel from "@/components/shop/ProductPurchasePanel";
 import { ensureCurrentMember } from "@/lib/members";
+import { buildShareMetadata } from "@/lib/site-metadata";
 import {
   getProductBySlug,
   parseProductImages,
@@ -21,10 +22,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: "Product | Dom Panteron Universe" };
   }
 
-  return {
+  const shareImage = parseProductImages(product)[0] ?? null;
+
+  return buildShareMetadata({
     title: `${product.title} | Collections`,
-    description: product.subtitle ?? product.description ?? undefined
-  };
+    description: product.subtitle ?? product.description,
+    path: `/products/${product.slug}`,
+    imageUrl: shareImage
+  });
 }
 
 export default async function ProductPage({ params }: Props) {

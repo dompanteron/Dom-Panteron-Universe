@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ProductCard from "@/components/shop/ProductCard";
+import { buildShareMetadata } from "@/lib/site-metadata";
 import { getCollectionBySlug } from "@/lib/shop/collections";
 
 type Props = {
@@ -15,10 +16,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: "Collection | Dom Panteron Universe" };
   }
 
-  return {
+  return buildShareMetadata({
     title: `${collection.name} | Collections`,
-    description: collection.subtitle ?? collection.description ?? undefined
-  };
+    description: collection.subtitle ?? collection.description,
+    path: `/collections/${collection.slug}`,
+    imageUrl: collection.cover_image_url
+  });
 }
 
 export default async function CollectionDetailPage({ params }: Props) {

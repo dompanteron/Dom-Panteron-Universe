@@ -44,6 +44,19 @@ Use `.env.local` for local secrets and Vercel Project Environment Variables for 
    - **Site URL:** your main Vercel URL
    - **Redirect URLs:** add `https://<your-project>.vercel.app/auth/callback` and `http://localhost:3000/auth/callback`
 
+## Custom domain (optional)
+
+1. **Vercel** — Project → **Settings → Domains** → add your domain (e.g. `dompanteron.com` and `www`). Follow DNS instructions until the domain shows **Valid**.
+2. **Environment variables** (Production, and Preview if you use previews on that hostname):
+   - `NEXT_PUBLIC_SITE_URL` = `https://your-domain.com` (no trailing slash)
+   - `NEXT_PUBLIC_APP_URL` = same value
+3. **Redeploy** production after changing env vars.
+4. **Supabase Auth** — update **Site URL** and add redirect:
+   - `https://your-domain.com/auth/callback`
+   - Keep `http://localhost:3000/auth/callback` for local dev
+5. **SumUp webhook** (if used) — point to `https://your-domain.com/api/webhooks/sumup`
+6. **Resend** — if your sending domain is verified there, keep `RESEND_FROM_EMAIL` aligned with that domain.
+
 CLI alternative (after `npx vercel login`):
 
 ```bash

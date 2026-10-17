@@ -6,6 +6,7 @@ import { ensureCurrentMember } from "@/lib/members";
 import { isSumUpConfigured } from "@/lib/payments/sumup-config";
 import { sumMemberRaffleEntries } from "@/lib/raffle-entries";
 import { formatRaffleDrawDate, type PublicRaffle } from "@/lib/raffles";
+import { buildShareMetadata } from "@/lib/site-metadata";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 
 type Props = {
@@ -24,10 +25,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: "Raffle | Dom Panteron Universe" };
   }
 
-  return {
+  return buildShareMetadata({
     title: `${data.title} | Raffles`,
-    description: data.subtitle ?? undefined
-  };
+    description: data.subtitle,
+    path: `/raffles/${params.id}`
+  });
 }
 
 export default async function RaffleDetailPage({ params }: Props) {

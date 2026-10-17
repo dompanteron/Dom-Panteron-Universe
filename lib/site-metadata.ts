@@ -30,9 +30,33 @@ export function rootSiteMetadata(): Metadata {
   };
 }
 
-export function pageTitle(title: string): Metadata {
+export function buildShareMetadata(input: {
+  title: string;
+  description?: string | null;
+  path?: string;
+  imageUrl?: string | null;
+}): Metadata {
+  const base = getSiteUrl();
+  const description = input.description?.trim() || defaultDescription;
+  const pageUrl = input.path ? `${base}${input.path}` : undefined;
+  const image = input.imageUrl?.trim();
+
+  const images = image ? [{ url: image, alt: input.title }] : undefined;
+
   return {
-    title,
-    openGraph: { title: `${title} | ${siteName}` }
+    title: input.title,
+    description,
+    openGraph: {
+      title: input.title,
+      description,
+      url: pageUrl,
+      images
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: input.title,
+      description,
+      images: image ? [image] : undefined
+    }
   };
 }
