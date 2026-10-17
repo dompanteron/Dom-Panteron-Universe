@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const STORAGE_KEY = "dom_panteron_sumup_checkout_id";
+const SUMUP_STORAGE_KEY = "dom_panteron_sumup_checkout_id";
+const PAYPAL_STORAGE_KEY = "dom_panteron_paypal_order_id";
 
 export default function ShopOrderComplete({ orderId }: { orderId: string }) {
   const searchParams = useSearchParams();
@@ -12,12 +13,62 @@ export default function ShopOrderComplete({ orderId }: { orderId: string }) {
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    const paypalToken =
+      searchParams.get("token") ||
+      (typeof window !== "undefined" ? sessionStorage.getItem(PAYPAL_STORAGE_KEY) : null);
+
+    if (paypalToken) {
+      let cancelled = false;
+
+      async function capturePayPal() {
+        try {
+          const response = await fetch("/api/shop/orders/paypal/capture", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orderId, paypalOrderId: paypalToken })
+          });
+          const payload = (await response.json()) as {
+            ok: boolean;
+            status?: string;
+            error?: string;
+          };
+
+          if (cancelled) return;
+
+          if (!response.ok || !payload.ok) {
+            setStatus("failed");
+            setMessage(payload.error || "PayPal capture failed.");
+            return;
+          }
+
+          if (payload.status === "paid") {
+            sessionStorage.removeItem(PAYPAL_STORAGE_KEY);
+            setStatus("paid");
+            return;
+          }
+
+          setStatus("pending");
+          setMessage("PayPal is still processing. Refresh or check Account.");
+        } catch {
+          if (!cancelled) {
+            setStatus("pending");
+            setMessage("Could not reach the server. Try again shortly.");
+          }
+        }
+      }
+
+      void capturePayPal();
+      return () => {
+        cancelled = true;
+      };
+    }
+
     const fromUrl =
       searchParams.get("checkout_id") ||
       searchParams.get("checkoutId") ||
       searchParams.get("id");
     const checkoutId =
-      fromUrl || (typeof window !== "undefined" ? sessionStorage.getItem(STORAGE_KEY) : null);
+      fromUrl || (typeof window !== "undefined" ? sessionStorage.getItem(SUMUP_STORAGE_KEY) : null);
 
     if (!checkoutId) {
       setStatus("pending");
@@ -50,7 +101,7 @@ export default function ShopOrderComplete({ orderId }: { orderId: string }) {
         }
 
         if (payload.status === "paid") {
-          sessionStorage.removeItem(STORAGE_KEY);
+          sessionStorage.removeItem(SUMUP_STORAGE_KEY);
           setStatus("paid");
           return;
         }
@@ -80,7 +131,7 @@ export default function ShopOrderComplete({ orderId }: { orderId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [searchParams]);
+  }, [orderId, searchParams]);
 
   return (
     <div className="mx-auto max-w-lg border border-white/10 bg-panteron-deep p-8 text-center">
@@ -107,7 +158,7 @@ export default function ShopOrderComplete({ orderId }: { orderId: string }) {
       {status === "failed" ? (
         <>
           <p className="font-display text-2xl text-red-400">Payment failed</p>
-          <p className="mt-3 text-sm text-zinc-400">Try again from the product page or use another card.</p>
+          <p className="mt-3 text-sm text-zinc-400">{message ?? "Try again from the product page."}</p>
           <Link href="/collections" className="mt-8 inline-block text-sm text-panteron-violet hover:text-white">
             Back to collections →
           </Link>

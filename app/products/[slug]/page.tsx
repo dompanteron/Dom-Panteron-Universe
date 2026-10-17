@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import ProductGallery from "@/components/shop/ProductGallery";
 import ProductPurchasePanel from "@/components/shop/ProductPurchasePanel";
 import { ensureCurrentMember } from "@/lib/members";
+import { getPaymentOptionsForUi } from "@/lib/payments/payment-providers";
 import { buildShareMetadata } from "@/lib/site-metadata";
 import {
   getProductBySlug,
@@ -44,6 +45,7 @@ export default async function ProductPage({ params }: Props) {
   const images = parseProductImages(product);
   const isSold = product.status === "sold";
   const price = Number(product.price);
+  const paymentOptions = getPaymentOptionsForUi();
   return (
     <main className="text-white">
       <section className="border-b border-white/10 bg-panteron-black">
@@ -103,6 +105,8 @@ export default async function ProductPage({ params }: Props) {
               isSold={isSold}
               defaultName={member?.full_name}
               defaultEmail={member?.email}
+              paymentSumup={paymentOptions.sumup}
+              paymentPaypal={paymentOptions.paypal}
             />
           </div>
         </div>

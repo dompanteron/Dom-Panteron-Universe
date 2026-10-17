@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
+import PaymentMethodPicker from "@/components/payments/PaymentMethodPicker";
+import type { PaymentProvider } from "@/lib/payments/payment-providers";
 import { formatProductPrice } from "@/lib/shop/format-price";
 
 const fieldClass =
@@ -16,7 +18,9 @@ export default function ProductPurchasePanel({
   signedIn,
   isSold,
   defaultName,
-  defaultEmail
+  defaultEmail,
+  paymentSumup,
+  paymentPaypal
 }: {
   productSlug: string;
   price: number;
@@ -27,7 +31,17 @@ export default function ProductPurchasePanel({
   isSold: boolean;
   defaultName?: string | null;
   defaultEmail?: string | null;
+  paymentSumup: boolean;
+  paymentPaypal: boolean;
 }) {
+  const defaultProvider = useMemo((): PaymentProvider => {
+    if (paymentSumup) {
+      return "sumup";
+    }
+    return "paypal";
+  }, [paymentSumup]);
+  const [paymentProvider, setPaymentProvider] = useState<PaymentProvider>(defaultProvider);
+  const paymentsOnline = paymentSumup || paymentPaypal;
   const [size, setSize] = useState(sizes[0] ?? "One size");
   const [quantity, setQuantity] = useState(1);
   const [customerName, setCustomerName] = useState(defaultName ?? "");
@@ -58,7 +72,8 @@ export default function ProductPurchasePanel({
           shipping_address: shippingAddress,
           shipping_city: shippingCity,
           shipping_postal_code: shippingPostalCode,
-          shipping_country: shippingCountry
+          shipping_country: shippingCountry,
+          paymentProvider: paymentsOnline ? paymentProvider : undefined
         })
       });
 
@@ -75,9 +90,15 @@ export default function ProductPurchasePanel({
         throw new Error(payload.error || "Could not place order");
       }
 
-      if (payload.paymentMode === "sumup" && payload.checkoutUrl) {
-        if (payload.checkoutId) {
+      if (
+        (payload.paymentMode === "sumup" || payload.paymentMode === "paypal") &&
+        payload.checkoutUrl
+      ) {
+        if (payload.checkoutId && payload.paymentMode === "sumup") {
           sessionStorage.setItem("dom_panteron_sumup_checkout_id", payload.checkoutId);
+        }
+        if (payload.checkoutId && payload.paymentMode === "paypal") {
+          sessionStorage.setItem("dom_panteron_paypal_order_id", payload.checkoutId);
         }
         window.location.assign(payload.checkoutUrl);
         return;
@@ -115,8 +136,10 @@ export default function ProductPurchasePanel({
         </p>
       ) : null}
       <p className="mt-2 text-sm text-zinc-400">
-        Ready-made piece — choose size and checkout. Card payment via SumUp when configured;
-        otherwise we confirm payment manually.
+        Ready-made piece — choose size and checkout.
+        {paymentsOnline
+          ? " Pay with card (SumUp) and/or PayPal when configured."
+          : " We confirm payment manually for now."}
       </p>
 
       {!signedIn ? (
@@ -238,6 +261,15 @@ export default function ProductPurchasePanel({
               className={fieldClass}
             />
           </label>
+
+          {paymentsOnline ? (
+            <PaymentMethodPicker
+              sumup={paymentSumup}
+              paypal={paymentPaypal}
+              value={paymentProvider}
+              onChange={setPaymentProvider}
+            />
+          ) : null}
 
           {error ? <p className="text-sm text-red-400">{error}</p> : null}
           {message ? (

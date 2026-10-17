@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import RaffleEnterPanel from "@/components/RaffleEnterPanel";
 import { ensureCurrentMember } from "@/lib/members";
-import { isSumUpConfigured } from "@/lib/payments/sumup-config";
+import { getPaymentOptionsForUi } from "@/lib/payments/payment-providers";
 import { sumMemberRaffleEntries } from "@/lib/raffle-entries";
 import { formatRaffleDrawDate, type PublicRaffle } from "@/lib/raffles";
 import { buildShareMetadata } from "@/lib/site-metadata";
@@ -50,7 +50,8 @@ export default async function RaffleDetailPage({ params }: Props) {
   const { member } = await ensureCurrentMember();
   const spotsLeft = Math.max(0, raffle.max_entries - raffle.total_entries);
   const isFull = spotsLeft === 0;
-  const paymentsEnabled = isSumUpConfigured();
+  const paymentOptions = getPaymentOptionsForUi();
+  const paymentsEnabled = paymentOptions.any;
 
   let yourEntries = 0;
   if (member) {
@@ -142,6 +143,8 @@ export default async function RaffleDetailPage({ params }: Props) {
               isFull={isFull}
               signedIn={Boolean(member)}
               paymentsEnabled={paymentsEnabled}
+              paymentSumup={paymentOptions.sumup}
+              paymentPaypal={paymentOptions.paypal}
             />
           </aside>
         </div>

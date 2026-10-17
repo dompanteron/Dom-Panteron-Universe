@@ -45,3 +45,14 @@ const sumupPartial = [
 if (sumupPartial === 1) {
   console.warn("SumUp: set both SUMUP_API_KEY and SUMUP_MERCHANT_CODE or leave both empty.");
 }
+
+const paypalPartial = [
+  process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID?.trim(),
+  process.env.PAYPAL_CLIENT_SECRET?.trim()
+].filter(Boolean).length;
+
+if (paypalPartial === 1) {
+  console.warn(
+    "PayPal: set both NEXT_PUBLIC_PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET or leave both empty."
+  );
+}

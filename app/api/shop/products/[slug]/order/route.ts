@@ -3,8 +3,10 @@ import { NextResponse } from "next/server";
 import { notifyAdminShopOrder } from "@/lib/email/send-admin-notification";
 import { sendProductOrderEmail } from "@/lib/email/send-product-order";
 import { ensureCurrentMember } from "@/lib/members";
+import { createPayPalCheckoutOrder } from "@/lib/payments/paypal-api";
+import { resolvePaymentProvider } from "@/lib/payments/payment-providers";
 import { createSumUpHostedCheckout } from "@/lib/payments/sumup-api";
-import { getSumUpCredentials, isSumUpConfigured } from "@/lib/payments/sumup-config";
+import { getSumUpCredentials } from "@/lib/payments/sumup-config";
 import { getSiteUrl } from "@/lib/site-url";
 import { parseProductSizes } from "@/lib/shop/products";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -31,6 +33,7 @@ export async function POST(
     shipping_city?: string;
     shipping_postal_code?: string;
     shipping_country?: string;
+    paymentProvider?: string;
   };
 
   const customerName = body.customer_name?.trim() || member.full_name?.trim();
@@ -110,9 +113,15 @@ export async function POST(
   revalidatePath("/account");
 
   const siteUrl = getSiteUrl();
-  const sumupCreds = getSumUpCredentials();
+  const provider = resolvePaymentProvider(body.paymentProvider);
 
-  if (isSumUpConfigured() && sumupCreds) {
+  if (provider === "sumup") {
+    const sumupCreds = getSumUpCredentials();
+    if (!sumupCreds) {
+      await admin.from("product_orders").delete().eq("id", order.id);
+      return NextResponse.json({ ok: false, error: "SumUp not configured." }, { status: 500 });
+    }
+
     try {
       const returnUrl = `${siteUrl}/api/webhooks/sumup`;
       const redirectUrl = `${siteUrl}/shop/orders/${order.id}/complete?payment_return=1`;
@@ -147,6 +156,45 @@ export async function POST(
         {
           ok: false,
           error: error instanceof Error ? error.message : "Payment setup failed."
+        },
+        { status: 500 }
+      );
+    }
+  }
+
+  if (provider === "paypal") {
+    try {
+      const returnUrl = `${siteUrl}/shop/orders/${order.id}/complete?payment_return=1`;
+      const cancelUrl = `${siteUrl}/products/${product.slug}`;
+
+      const paypal = await createPayPalCheckoutOrder({
+        referenceId: order.id,
+        amount: totalPrice,
+        currency,
+        description: `${product.title} (${size} × ${quantity})`,
+        returnUrl,
+        cancelUrl
+      });
+
+      await admin
+        .from("product_orders")
+        .update({ paypal_order_id: paypal.orderId })
+        .eq("id", order.id);
+
+      return NextResponse.json({
+        ok: true,
+        orderId: order.id,
+        checkoutId: paypal.orderId,
+        checkoutUrl: paypal.approveUrl,
+        paymentMode: "paypal",
+        message: "Redirecting to PayPal…"
+      });
+    } catch (error) {
+      await admin.from("product_orders").delete().eq("id", order.id);
+      return NextResponse.json(
+        {
+          ok: false,
+          error: error instanceof Error ? error.message : "PayPal setup failed."
         },
         { status: 500 }
       );

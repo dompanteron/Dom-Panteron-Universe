@@ -97,7 +97,19 @@ Apply migration `20251017120000_product_orders_sumup.sql` (`npx supabase db push
 
 Raffle entries use the same SumUp keys when configured (`POST /api/raffles/[id]/enter` → hosted checkout → entries recorded on payment).
 
-PayPal (`NEXT_PUBLIC_PAYPAL_CLIENT_ID`) is not wired yet — SumUp first.
+## PayPal (shop + raffles)
+
+When **both** are set (and SumUp is optional), checkout can use **PayPal redirect + capture**:
+
+- `NEXT_PUBLIC_PAYPAL_CLIENT_ID` — REST app client ID (sandbox or live)
+- `PAYPAL_CLIENT_SECRET` — secret for the same app (server only, never expose in the browser)
+- Optional `PAYPAL_ENV` — `sandbox` or `live` (otherwise inferred from the client id)
+
+If **SumUp and PayPal** are both configured, the buyer chooses **Card (SumUp)** or **PayPal** on product and raffle checkout. If only one is set, that provider is used automatically.
+
+Apply migration `20251017230000_paypal_order_ids.sql` (`npx supabase db push`).
+
+**Sandbox:** create app at [PayPal Developer](https://developer.paypal.com/) and use sandbox business + personal test accounts.
 
 ## Database migrations
 

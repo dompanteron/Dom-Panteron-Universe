@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const STORAGE_KEY = "dom_panteron_raffle_sumup_checkout_id";
+const SUMUP_STORAGE_KEY = "dom_panteron_raffle_sumup_checkout_id";
 
 export default function RaffleCheckoutComplete({
   checkoutId,
@@ -18,12 +18,65 @@ export default function RaffleCheckoutComplete({
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    const paypalToken = searchParams.get("token");
+
+    if (paypalToken) {
+      let cancelled = false;
+
+      async function capturePayPal() {
+        try {
+          const response = await fetch("/api/raffles/checkouts/paypal/capture", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ checkoutId, paypalOrderId: paypalToken })
+          });
+          const payload = (await response.json()) as {
+            ok: boolean;
+            status?: string;
+            error?: string;
+          };
+
+          if (cancelled) return;
+
+          if (!response.ok || !payload.ok) {
+            setStatus("failed");
+            setMessage(payload.error || "PayPal capture failed.");
+            return;
+          }
+
+          if (payload.status === "paid") {
+            setStatus("paid");
+            return;
+          }
+
+          if (payload.status === "failed") {
+            setStatus("failed");
+            setMessage(payload.error ?? "Draw may be full or entry limit reached.");
+            return;
+          }
+
+          setStatus("pending");
+          setMessage("PayPal is still processing. Refresh or check Account.");
+        } catch {
+          if (!cancelled) {
+            setStatus("pending");
+            setMessage("Could not reach the server.");
+          }
+        }
+      }
+
+      void capturePayPal();
+      return () => {
+        cancelled = true;
+      };
+    }
+
     const fromUrl =
       searchParams.get("checkout_id") ||
       searchParams.get("checkoutId") ||
       searchParams.get("id");
     const sumupId =
-      fromUrl || (typeof window !== "undefined" ? sessionStorage.getItem(STORAGE_KEY) : null);
+      fromUrl || (typeof window !== "undefined" ? sessionStorage.getItem(SUMUP_STORAGE_KEY) : null);
 
     if (!sumupId) {
       setStatus("pending");
@@ -56,7 +109,7 @@ export default function RaffleCheckoutComplete({
         }
 
         if (payload.status === "paid") {
-          sessionStorage.removeItem(STORAGE_KEY);
+          sessionStorage.removeItem(SUMUP_STORAGE_KEY);
           setStatus("paid");
           return;
         }
@@ -87,7 +140,7 @@ export default function RaffleCheckoutComplete({
     return () => {
       cancelled = true;
     };
-  }, [searchParams]);
+  }, [checkoutId, searchParams]);
 
   return (
     <div className="mx-auto max-w-lg border border-white/10 bg-panteron-deep p-8 text-center">

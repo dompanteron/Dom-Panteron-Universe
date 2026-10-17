@@ -18,10 +18,13 @@ type CheckoutRow = {
 export async function completeRaffleCheckout(input: {
   checkoutId?: string | null;
   sumupCheckoutId?: string | null;
+  paypalOrderId?: string | null;
 }) {
   const admin = createAdminClient();
 
-  async function loadPending(match: { column: "id" | "sumup_checkout_id"; value: string }) {
+  async function loadPending(
+    match: { column: "id" | "sumup_checkout_id" | "paypal_order_id"; value: string }
+  ) {
     return admin
       .from("raffle_checkouts")
       .select("id, raffle_id, member_id, quantity, total_price, status, members(email, full_name)")
@@ -39,6 +42,11 @@ export async function completeRaffleCheckout(input: {
 
   if (!checkoutRow && input.sumupCheckoutId) {
     const { data } = await loadPending({ column: "sumup_checkout_id", value: input.sumupCheckoutId });
+    if (data) checkoutRow = data as CheckoutRow;
+  }
+
+  if (!checkoutRow && input.paypalOrderId) {
+    const { data } = await loadPending({ column: "paypal_order_id", value: input.paypalOrderId });
     if (data) checkoutRow = data as CheckoutRow;
   }
 

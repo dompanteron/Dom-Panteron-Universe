@@ -3,8 +3,10 @@ import { NextResponse } from "next/server";
 import { notifyAdminRaffleEntry } from "@/lib/email/send-admin-notification";
 import { sendRaffleEntryEmail } from "@/lib/email/send-raffle-entry";
 import { ensureCurrentMember } from "@/lib/members";
+import { createPayPalCheckoutOrder } from "@/lib/payments/paypal-api";
+import { resolvePaymentProvider } from "@/lib/payments/payment-providers";
 import { createSumUpHostedCheckout } from "@/lib/payments/sumup-api";
-import { getSumUpCredentials, isSumUpConfigured } from "@/lib/payments/sumup-config";
+import { getSumUpCredentials } from "@/lib/payments/sumup-config";
 import { getSiteUrl } from "@/lib/site-url";
 import { validateRaffleEntry } from "@/lib/raffles/validate-entry";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -22,7 +24,10 @@ export async function POST(
     );
   }
 
-  const body = (await request.json().catch(() => ({}))) as { quantity?: number | string };
+  const body = (await request.json().catch(() => ({}))) as {
+    quantity?: number | string;
+    paymentProvider?: string;
+  };
   const quantity = Number(body.quantity ?? 1);
 
   const validated = await validateRaffleEntry({
@@ -39,9 +44,9 @@ export async function POST(
   const unitPrice = Number(raffle.ticket_price);
   const totalPrice = unitPrice * quantity;
   const admin = createAdminClient();
-  const sumupCreds = getSumUpCredentials();
+  const provider = totalPrice > 0 ? resolvePaymentProvider(body.paymentProvider) : null;
 
-  if (isSumUpConfigured() && sumupCreds && totalPrice > 0) {
+  if (provider) {
     const { data: checkoutRow, error: checkoutInsertError } = await admin
       .from("raffle_checkouts")
       .insert({
@@ -64,30 +69,62 @@ export async function POST(
     }
 
     const siteUrl = getSiteUrl();
+    const description = `${raffle.title} · ${quantity} entr${quantity === 1 ? "y" : "ies"}`;
+    const returnPath = `${siteUrl}/raffles/checkout/${checkoutRow.id}/complete?payment_return=1`;
 
     try {
-      const sumup = await createSumUpHostedCheckout({
-        apiKey: sumupCreds.apiKey,
-        merchantCode: sumupCreds.merchantCode,
+      if (provider === "sumup") {
+        const sumupCreds = getSumUpCredentials();
+        if (!sumupCreds) {
+          throw new Error("SumUp not configured.");
+        }
+
+        const sumup = await createSumUpHostedCheckout({
+          apiKey: sumupCreds.apiKey,
+          merchantCode: sumupCreds.merchantCode,
+          amount: totalPrice,
+          currency: "EUR",
+          checkoutReference: checkoutRow.id,
+          description,
+          redirectUrl: returnPath,
+          returnUrl: `${siteUrl}/api/webhooks/sumup`
+        });
+
+        await admin
+          .from("raffle_checkouts")
+          .update({ sumup_checkout_id: sumup.id })
+          .eq("id", checkoutRow.id);
+
+        return NextResponse.json({
+          ok: true,
+          paymentMode: "sumup",
+          checkoutId: sumup.id,
+          checkoutUrl: sumup.hosted_checkout_url,
+          message: "Redirecting to payment…"
+        });
+      }
+
+      const paypal = await createPayPalCheckoutOrder({
+        referenceId: checkoutRow.id,
         amount: totalPrice,
         currency: "EUR",
-        checkoutReference: checkoutRow.id,
-        description: `${raffle.title} · ${quantity} entr${quantity === 1 ? "y" : "ies"}`,
-        redirectUrl: `${siteUrl}/raffles/checkout/${checkoutRow.id}/complete?payment_return=1`,
-        returnUrl: `${siteUrl}/api/webhooks/sumup`
+        description,
+        returnUrl: returnPath,
+        cancelUrl: `${siteUrl}/raffles/${params.id}`
       });
 
       await admin
         .from("raffle_checkouts")
-        .update({ sumup_checkout_id: sumup.id })
+        .update({ paypal_order_id: paypal.orderId })
         .eq("id", checkoutRow.id);
 
       return NextResponse.json({
         ok: true,
-        paymentMode: "sumup",
-        checkoutId: sumup.id,
-        checkoutUrl: sumup.hosted_checkout_url,
-        message: "Redirecting to payment…"
+        paymentMode: "paypal",
+        checkoutId: paypal.orderId,
+        raffleCheckoutId: checkoutRow.id,
+        checkoutUrl: paypal.approveUrl,
+        message: "Redirecting to PayPal…"
       });
     } catch (error) {
       await admin.from("raffle_checkouts").delete().eq("id", checkoutRow.id);

@@ -45,7 +45,9 @@ export async function completeProductOrderPayment(input: {
 
   const paymentRef = input.paymentReference ?? input.checkoutId ?? null;
 
-  async function tryUpdate(match: { column: "id" | "sumup_checkout_id"; value: string }) {
+  async function tryUpdate(
+    match: { column: "id" | "sumup_checkout_id" | "paypal_order_id"; value: string }
+  ) {
     return admin
       .from("product_orders")
       .update({ status: "paid", payment_reference: paymentRef })
@@ -66,6 +68,10 @@ export async function completeProductOrderPayment(input: {
 
   if (!data && input.checkoutId) {
     ({ data, error } = await tryUpdate({ column: "sumup_checkout_id", value: input.checkoutId }));
+  }
+
+  if (!data && input.checkoutId) {
+    ({ data, error } = await tryUpdate({ column: "paypal_order_id", value: input.checkoutId }));
   }
 
   if (error) {

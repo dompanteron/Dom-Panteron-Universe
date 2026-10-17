@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import PaymentMethodPicker from "@/components/payments/PaymentMethodPicker";
+import type { PaymentProvider } from "@/lib/payments/payment-providers";
 
 const RAFFLE_CHECKOUT_STORAGE_KEY = "dom_panteron_raffle_sumup_checkout_id";
 
@@ -15,6 +17,8 @@ type RaffleEnterPanelProps = {
   isFull: boolean;
   signedIn: boolean;
   paymentsEnabled: boolean;
+  paymentSumup: boolean;
+  paymentPaypal: boolean;
 };
 
 export default function RaffleEnterPanel({
@@ -25,9 +29,18 @@ export default function RaffleEnterPanel({
   ticketLimitPerUser,
   isFull,
   signedIn,
-  paymentsEnabled
+  paymentsEnabled,
+  paymentSumup,
+  paymentPaypal
 }: RaffleEnterPanelProps) {
   const router = useRouter();
+  const defaultProvider = useMemo((): PaymentProvider => {
+    if (paymentSumup) {
+      return "sumup";
+    }
+    return "paypal";
+  }, [paymentSumup]);
+  const [paymentProvider, setPaymentProvider] = useState<PaymentProvider>(defaultProvider);
   const maxQuantity = useMemo(() => {
     if (isFull || spotsLeft <= 0) {
       return 0;
@@ -57,7 +70,10 @@ export default function RaffleEnterPanel({
       const response = await fetch(`/api/raffles/${raffleId}/enter`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ quantity })
+        body: JSON.stringify({
+          quantity,
+          paymentProvider: paymentsEnabled && lineTotal > 0 ? paymentProvider : undefined
+        })
       });
       const payload = (await response.json()) as {
         ok: boolean;
@@ -72,8 +88,11 @@ export default function RaffleEnterPanel({
         throw new Error(payload.error || "Could not enter draw");
       }
 
-      if (payload.paymentMode === "sumup" && payload.checkoutUrl) {
-        if (payload.checkoutId) {
+      if (
+        (payload.paymentMode === "sumup" || payload.paymentMode === "paypal") &&
+        payload.checkoutUrl
+      ) {
+        if (payload.checkoutId && payload.paymentMode === "sumup") {
           sessionStorage.setItem(RAFFLE_CHECKOUT_STORAGE_KEY, payload.checkoutId);
         }
         window.location.assign(payload.checkoutUrl);
@@ -139,8 +158,22 @@ export default function RaffleEnterPanel({
           </label>
           <p className="text-xs text-zinc-500">
             {ticketPrice.toFixed(2)} EUR per entry · Total {lineTotal.toFixed(2)} EUR
-            {paymentsEnabled ? " · Pay with SumUp" : " · Manual payment for now"}
+            {paymentsEnabled
+              ? paymentSumup && paymentPaypal
+                ? " · Card or PayPal"
+                : paymentPaypal
+                  ? " · PayPal"
+                  : " · Card (SumUp)"
+              : " · Manual payment for now"}
           </p>
+          {paymentsEnabled && lineTotal > 0 ? (
+            <PaymentMethodPicker
+              sumup={paymentSumup}
+              paypal={paymentPaypal}
+              value={paymentProvider}
+              onChange={setPaymentProvider}
+            />
+          ) : null}
           {error ? <p className="text-sm text-red-400">{error}</p> : null}
           {message ? <p className="text-sm text-panteron-violet">{message}</p> : null}
           <button
