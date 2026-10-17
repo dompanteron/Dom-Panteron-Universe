@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
 import { Manrope, Syne } from "next/font/google";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
+import { rootSiteMetadata } from "@/lib/site-metadata";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -14,10 +14,7 @@ const syne = Syne({
   variable: "--font-display"
 });
 
-export const metadata: Metadata = {
-  title: "Dom Panteron Universe",
-  description: "Clothing, music, and conscious elevation."
-};
+export const metadata = rootSiteMetadata();
 
 export default function RootLayout({
   children

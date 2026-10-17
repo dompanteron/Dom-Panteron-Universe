@@ -1,11 +1,13 @@
 import { revalidatePath } from "next/cache";
 import { notifyAdminShopOrder } from "@/lib/email/send-admin-notification";
 import { sendProductOrderEmail } from "@/lib/email/send-product-order";
+import { markProductSoldForOrder } from "@/lib/shop/mark-product-sold";
 import { getSiteUrl } from "@/lib/site-url";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type OrderWithProduct = {
   id: string;
+  product_id: string;
   customer_name: string;
   customer_email: string;
   size: string;
@@ -50,7 +52,7 @@ export async function completeProductOrderPayment(input: {
       .eq("status", "pending")
       .eq(match.column, match.value)
       .select(
-        "id, customer_name, customer_email, size, quantity, total_price, currency, status, shipping_address, shipping_city, shipping_postal_code, shipping_country, products(slug, title)"
+        "id, product_id, customer_name, customer_email, size, quantity, total_price, currency, status, shipping_address, shipping_city, shipping_postal_code, shipping_country, products(slug, title)"
       )
       .maybeSingle();
   }
@@ -107,6 +109,8 @@ export async function completeProductOrderPayment(input: {
     paid: true,
     shippingSummary: shippingSummary(order) || undefined
   });
+
+  await markProductSoldForOrder(order.product_id);
 
   return { completed: true as const, orderId: order.id };
 }

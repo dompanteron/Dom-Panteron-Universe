@@ -108,10 +108,10 @@ export default function AboutPage() {
               Join the universe
             </Link>
             <Link
-              href="/clothing"
+              href="/collections"
               className="border border-white/25 px-6 py-3 text-sm font-medium text-white transition hover:border-panteron-violet hover:text-panteron-violet"
             >
-              Explore clothing
+              Explore collections
             </Link>
           </div>
         </div>

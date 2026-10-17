@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { ensureCurrentMember } from "@/lib/members";
+import { markProductSoldForOrder } from "@/lib/shop/mark-product-sold";
 import { parseProductOrderUpdate } from "@/lib/shop/product-orders";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -23,7 +24,7 @@ export async function PATCH(
     const admin = createAdminClient();
     const { data: existing, error: existingError } = await admin
       .from("product_orders")
-      .select("id")
+      .select("id, product_id, status")
       .eq("id", params.id)
       .maybeSingle();
 
@@ -46,6 +47,14 @@ export async function PATCH(
     revalidatePath("/admin/orders");
     revalidatePath(`/admin/orders/${params.id}`);
     revalidatePath("/account");
+
+    if (
+      existing.product_id &&
+      parsed.data.status !== existing.status &&
+      (parsed.data.status === "paid" || parsed.data.status === "fulfilled")
+    ) {
+      await markProductSoldForOrder(existing.product_id);
+    }
 
     return NextResponse.json({ ok: true, order: data });
   } catch {
