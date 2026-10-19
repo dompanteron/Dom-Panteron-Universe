@@ -4,6 +4,12 @@ import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import PaymentMethodPicker from "@/components/payments/PaymentMethodPicker";
 import type { PaymentProvider } from "@/lib/payments/payment-providers";
+import {
+  collectionCheckoutRules,
+  effectiveMaxQuantity,
+  quantityOptions,
+  type CollectionCheckoutRules
+} from "@/lib/shop/checkout-rules";
 import { formatProductPrice } from "@/lib/shop/format-price";
 
 const fieldClass =
@@ -21,7 +27,9 @@ export default function ProductPurchasePanel({
   defaultEmail,
   paymentSumup,
   paymentPaypal,
-  purchaseLocked
+  purchaseLocked,
+  checkoutRules: checkoutRulesInput,
+  stockQuantity
 }: {
   productSlug: string;
   price: number;
@@ -31,11 +39,16 @@ export default function ProductPurchasePanel({
   signedIn: boolean;
   isSold: boolean;
   purchaseLocked?: boolean;
+  checkoutRules?: Partial<CollectionCheckoutRules> | null;
+  stockQuantity?: number | null;
   defaultName?: string | null;
   defaultEmail?: string | null;
   paymentSumup: boolean;
   paymentPaypal: boolean;
 }) {
+  const checkoutRules = collectionCheckoutRules(checkoutRulesInput);
+  const maxQuantity = effectiveMaxQuantity(checkoutRules, stockQuantity);
+  const qtyChoices = quantityOptions(maxQuantity);
   const defaultProvider = useMemo((): PaymentProvider => {
     if (paymentSumup) {
       return "sumup";
@@ -46,6 +59,7 @@ export default function ProductPurchasePanel({
   const paymentsOnline = paymentSumup || paymentPaypal;
   const [size, setSize] = useState(sizes[0] ?? "One size");
   const [quantity, setQuantity] = useState(1);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [customerName, setCustomerName] = useState(defaultName ?? "");
   const [customerEmail, setCustomerEmail] = useState(defaultEmail ?? "");
   const [shippingAddress, setShippingAddress] = useState("");
@@ -75,7 +89,8 @@ export default function ProductPurchasePanel({
           shipping_city: shippingCity,
           shipping_postal_code: shippingPostalCode,
           shipping_country: shippingCountry,
-          paymentProvider: paymentsOnline ? paymentProvider : undefined
+          paymentProvider: paymentsOnline ? paymentProvider : undefined,
+          age_confirmed: checkoutRules.requires_age_confirm ? ageConfirmed : undefined
         })
       });
 
@@ -160,6 +175,16 @@ export default function ProductPurchasePanel({
           ? " Pay with card (SumUp) and/or PayPal when configured."
           : " We confirm payment manually for now."}
       </p>
+      {stockQuantity != null ? (
+        <p className="mt-2 text-sm text-zinc-500">
+          {stockQuantity > 0 ? `${stockQuantity} in stock` : "Out of stock"}
+        </p>
+      ) : null}
+      {checkoutRules.checkout_note ? (
+        <p className="mt-4 border border-white/10 bg-panteron-black/40 p-3 text-sm text-zinc-400">
+          {checkoutRules.checkout_note}
+        </p>
+      ) : null}
 
       {!signedIn ? (
         <Link
@@ -189,22 +214,40 @@ export default function ProductPurchasePanel({
             </label>
           ) : null}
 
-          <label className="block">
-            <span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">
-              Quantity
-            </span>
-            <select
-              value={quantity}
-              onChange={(event) => setQuantity(Number(event.target.value))}
-              className={fieldClass}
-            >
-              {[1, 2, 3, 4, 5].map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
-          </label>
+          {qtyChoices.length > 1 ? (
+            <label className="block">
+              <span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">
+                Quantity
+              </span>
+              <select
+                value={Math.min(quantity, maxQuantity)}
+                onChange={(event) => setQuantity(Number(event.target.value))}
+                className={fieldClass}
+              >
+                {qtyChoices.map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
+          {checkoutRules.requires_age_confirm ? (
+            <label className="flex items-start gap-3 border border-white/10 p-3">
+              <input
+                type="checkbox"
+                required
+                checked={ageConfirmed}
+                onChange={(event) => setAgeConfirmed(event.target.checked)}
+                className="mt-1 h-4 w-4"
+              />
+              <span className="text-sm text-zinc-300">
+                I confirm I am 18 years or older. Alcohol is sold only to adults; you may be asked
+                to verify age on delivery where required by law.
+              </span>
+            </label>
+          ) : null}
 
           <label className="block">
             <span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">

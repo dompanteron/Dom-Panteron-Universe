@@ -4,9 +4,12 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import AdminGalleryUpload from "@/components/admin/AdminGalleryUpload";
 import AdminImageUpload from "@/components/admin/AdminImageUpload";
+import AdminProductAttributesFields from "@/components/admin/AdminProductAttributesFields";
+import { parseProductAttributes } from "@/lib/shop/product-attributes";
+import type { ProductLine } from "@/lib/shop/product-lines";
 import { imagesToInput, sizesToInput } from "@/lib/shop/slug";
 
-export type CollectionOption = { id: string; name: string };
+export type CollectionOption = { id: string; name: string; product_line: ProductLine | null };
 
 export type ProductFormValues = {
   id?: string;
@@ -23,6 +26,8 @@ export type ProductFormValues = {
   main_image_url: string | null;
   display_order: number;
   status: string;
+  attributes?: unknown;
+  stock_quantity?: number | null;
 };
 
 const fieldClass =
@@ -54,9 +59,16 @@ export default function AdminProductForm({
   const [images, setImages] = useState(imagesToInput(product?.images));
   const [displayOrder, setDisplayOrder] = useState(String(product?.display_order ?? 0));
   const [status, setStatus] = useState(product?.status ?? "draft");
+  const [attributes, setAttributes] = useState(() => parseProductAttributes(product?.attributes));
+  const [stockQuantity, setStockQuantity] = useState(
+    product?.stock_quantity != null ? String(product.stock_quantity) : ""
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  const selectedCollection = collections.find((c) => c.id === collectionId);
+  const productLine = selectedCollection?.product_line ?? null;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -83,7 +95,9 @@ export default function AdminProductForm({
             main_image_url: mainImageUrl,
             images,
             display_order: displayOrder,
-            status
+            status,
+            attributes,
+            stock_quantity: stockQuantity
           })
         }
       );
@@ -145,6 +159,11 @@ export default function AdminProductForm({
         <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">Description</span>
         <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} className={fieldClass} />
       </label>
+      <AdminProductAttributesFields
+        productLine={productLine}
+        value={attributes}
+        onChange={setAttributes}
+      />
       <label className="block">
         <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">Price</span>
         <input required type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className={fieldClass} />
@@ -164,6 +183,22 @@ export default function AdminProductForm({
           <option value="active">active</option>
           <option value="sold">sold</option>
         </select>
+      </label>
+      <label className="block md:col-span-2">
+        <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">
+          Stock quantity (optional)
+        </span>
+        <input
+          type="number"
+          min={0}
+          value={stockQuantity}
+          onChange={(e) => setStockQuantity(e.target.value)}
+          className={fieldClass}
+          placeholder="Leave empty for one-of-one (marks sold after payment)"
+        />
+        <span className="mt-2 block text-xs text-zinc-500">
+          Use for water bottles or multi-unit SKUs. Empty = fashion-style single piece.
+        </span>
       </label>
       <label className="block md:col-span-2">
         <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">Sizes (comma separated)</span>

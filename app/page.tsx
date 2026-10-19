@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { productLineHubs } from "@/lib/shop/product-lines";
 
 export default function HomePage() {
   return (
@@ -45,11 +46,44 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className="border-t border-white/10 bg-panteron-deep">
+        <div className="mx-auto max-w-6xl px-6 py-20 md:py-28">
+          <p className="text-xs uppercase tracking-[0.3em] text-panteron-violet">Shop</p>
+          <h2 className="font-display mt-3 text-3xl sm:text-4xl">Three lines, one universe</h2>
+          <p className="mt-3 max-w-2xl text-zinc-400">
+            Champagne, HOME, and water bottles each have their own door — same membership and
+            checkout as fashion.
+          </p>
+          <div className="mt-10 grid gap-10 sm:grid-cols-3">
+            {productLineHubs.map((hub) => (
+              <Link key={hub.path} href={hub.path} className="group block border border-white/10 p-6 transition hover:border-panteron-violet/40">
+                <p className="text-xs uppercase tracking-[0.3em] text-panteron-violet">
+                  {hub.eyebrow}
+                </p>
+                <h3 className="font-display mt-3 text-xl transition group-hover:text-panteron-violet sm:text-2xl">
+                  {hub.navLabel}
+                </h3>
+                <p className="mt-3 text-sm text-zinc-400">{hub.lead}</p>
+                <span className="mt-5 inline-block text-sm text-zinc-300 transition group-hover:text-panteron-violet">
+                  Enter {hub.navLabel.toLowerCase()} →
+                </span>
+              </Link>
+            ))}
+          </div>
+          <Link
+            href="/collections"
+            className="mt-10 inline-block text-sm text-zinc-400 transition hover:text-panteron-violet"
+          >
+            View all collections including fashion →
+          </Link>
+        </div>
+      </section>
+
       <section className="border-t border-white/10 bg-panteron-black">
         <div className="mx-auto grid max-w-6xl gap-16 px-6 py-20 md:grid-cols-3 md:gap-10 md:py-28">
           <Link href="/collections" className="group block">
             <p className="text-xs uppercase tracking-[0.3em] text-panteron-violet">
-              Collections
+              Fashion
             </p>
             <h2 className="font-display mt-3 text-2xl transition group-hover:text-panteron-violet sm:text-3xl">
               Wear the jungle frequency

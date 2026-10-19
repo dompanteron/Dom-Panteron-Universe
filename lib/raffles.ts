@@ -1,3 +1,5 @@
+import { isProductLine, productLineHubs, type ProductLine } from "@/lib/shop/product-lines";
+
 const STATUSES = new Set(["draft", "active", "ended"]);
 
 export type RaffleInput = {
@@ -9,7 +11,19 @@ export type RaffleInput = {
   ticket_limit_per_user: number | null;
   draw_date: string;
   status: string;
+  product_line: ProductLine | null;
 };
+
+export function parseRaffleProductLine(value: unknown): ProductLine | null {
+  const raw = String(value ?? "").trim();
+  if (!raw || raw === "universe") {
+    return null;
+  }
+  if (!isProductLine(raw)) {
+    return null;
+  }
+  return raw;
+}
 
 export function parseRaffleBody(body: {
   title?: string;
@@ -20,6 +34,7 @@ export function parseRaffleBody(body: {
   ticket_limit_per_user?: number | string | null;
   draw_date?: string;
   status?: string;
+  product_line?: string | null;
 }): { ok: true; data: RaffleInput } | { ok: false; error: string } {
   const title = body.title?.trim();
   const drawDate = body.draw_date?.trim();
@@ -68,6 +83,17 @@ export function parseRaffleBody(body: {
     return { ok: false, error: "Draw date is invalid." };
   }
 
+  const productLine = parseRaffleProductLine(body.product_line);
+  if (
+    body.product_line !== undefined &&
+    body.product_line !== null &&
+    String(body.product_line).trim() &&
+    String(body.product_line).trim() !== "universe" &&
+    !productLine
+  ) {
+    return { ok: false, error: "Invalid product line for raffle." };
+  }
+
   return {
     ok: true,
     data: {
@@ -78,7 +104,8 @@ export function parseRaffleBody(body: {
       max_entries: maxEntries,
       ticket_limit_per_user: ticketLimitPerUser,
       draw_date: parsedDate.toISOString(),
-      status
+      status,
+      product_line: productLine
     }
   };
 }
@@ -94,7 +121,12 @@ export function toDatetimeLocal(iso: string) {
 }
 
 export function revalidateRafflePaths() {
-  return ["/admin/raffles", "/raffles", "/admin"] as const;
+  return [
+    "/admin/raffles",
+    "/raffles",
+    "/admin",
+    ...productLineHubs.map((hub) => hub.path)
+  ] as const;
 }
 
 export type PublicRaffle = {
@@ -108,6 +140,7 @@ export type PublicRaffle = {
   ticket_limit_per_user: number | null;
   draw_date: string;
   status: string;
+  product_line?: ProductLine | null;
   winner_number?: number | null;
   winner_initials?: string | null;
   winner_display_name?: string | null;

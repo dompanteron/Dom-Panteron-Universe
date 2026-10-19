@@ -1,51 +1,29 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { formatRaffleDrawDate, type PublicRaffle } from "@/lib/raffles";
-import { createClient as createServerClient } from "@/lib/supabase/server";
+import { RaffleActiveList, RaffleEndedList } from "@/components/raffles/RafflePublicList";
+import {
+  fetchActivePublicRaffles,
+  fetchEndedPublicRaffles
+} from "@/lib/raffles/fetch-public-raffles";
+import { productLineHubs } from "@/lib/shop/product-lines";
 
 export const metadata: Metadata = {
   title: "Raffles | Dom Panteron Universe",
-  description:
-    "Limited drops and member draws inside Dom Panteron Universe."
+  description: "Limited drops and member draws inside Dom Panteron Universe."
 };
 
 export default async function RafflesPage() {
-  let raffles: PublicRaffle[] = [];
-  let pastRaffles: PublicRaffle[] = [];
+  let raffles: Awaited<ReturnType<typeof fetchActivePublicRaffles>> = [];
+  let pastRaffles: Awaited<ReturnType<typeof fetchEndedPublicRaffles>> = [];
   let loadError: string | null = null;
 
   try {
-    const supabase = await createServerClient();
-    const [activeResult, endedResult] = await Promise.all([
-      supabase
-        .from("raffles")
-        .select(
-          "id, title, subtitle, description, ticket_price, max_entries, total_entries, draw_date, status"
-        )
-        .eq("status", "active")
-        .order("draw_date", { ascending: true }),
-      supabase
-        .from("raffles")
-        .select(
-          "id, title, subtitle, description, ticket_price, max_entries, total_entries, draw_date, status, winner_number, winner_initials, winner_display_name"
-        )
-        .eq("status", "ended")
-        .order("draw_date", { ascending: false })
-        .limit(12)
+    [raffles, pastRaffles] = await Promise.all([
+      fetchActivePublicRaffles(),
+      fetchEndedPublicRaffles({ limit: 12 })
     ]);
-
-    if (activeResult.error) {
-      loadError = activeResult.error.message;
-    } else {
-      raffles = (activeResult.data ?? []) as PublicRaffle[];
-    }
-
-    if (!endedResult.error) {
-      pastRaffles = (endedResult.data ?? []) as PublicRaffle[];
-    }
   } catch (error) {
-    loadError =
-      error instanceof Error ? error.message : "Could not load raffles.";
+    loadError = error instanceof Error ? error.message : "Could not load raffles.";
   }
 
   return (
@@ -65,9 +43,20 @@ export default async function RafflesPage() {
             Step into the circle
           </h1>
           <p className="home-rise home-rise-delay-2 mt-6 max-w-2xl text-lg text-zinc-300 sm:text-xl">
-            Limited draws for members of the universe. Join first, then claim
-            your place when a raffle goes live.
+            Universe-wide draws plus line-specific drops for champagne, HOME, and water. Join
+            first, then claim your place when a raffle goes live.
           </p>
+          <div className="home-rise home-rise-delay-3 mt-8 flex flex-wrap gap-3">
+            {productLineHubs.map((hub) => (
+              <Link
+                key={hub.path}
+                href={`${hub.path}#draws`}
+                className="border border-white/20 px-4 py-2 text-sm transition hover:border-panteron-violet hover:text-panteron-violet"
+              >
+                {hub.navLabel} draws
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -80,15 +69,13 @@ export default async function RafflesPage() {
             </div>
           ) : raffles.length === 0 ? (
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-panteron-violet">
-                Open circle
-              </p>
+              <p className="text-xs uppercase tracking-[0.3em] text-panteron-violet">Open circle</p>
               <h2 className="font-display mt-4 max-w-2xl text-3xl sm:text-4xl">
                 No active raffles yet
               </h2>
               <p className="mt-6 max-w-xl text-lg text-zinc-300">
-                When a draw goes live, it will appear here. Join the universe so
-                you’re ready for the next drop.
+                When a draw goes live, it will appear here. Join the universe so you&apos;re ready
+                for the next drop.
               </p>
               <Link
                 href="/join"
@@ -98,91 +85,14 @@ export default async function RafflesPage() {
               </Link>
             </div>
           ) : (
-            <ul className="divide-y divide-white/10 border-y border-white/10">
-              {raffles.map((raffle) => (
-                <li
-                  key={raffle.id}
-                  className="grid gap-4 py-10 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] md:items-end"
-                >
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.25em] text-panteron-violet">
-                      Active
-                    </p>
-                    <h2 className="font-display mt-3 text-3xl">
-                      <Link
-                        href={`/raffles/${raffle.id}`}
-                        className="transition hover:text-panteron-violet"
-                      >
-                        {raffle.title}
-                      </Link>
-                    </h2>
-                    {raffle.subtitle ? (
-                      <p className="mt-2 text-lg text-zinc-300">{raffle.subtitle}</p>
-                    ) : null}
-                  </div>
-                  <div className="md:text-right">
-                    <p className="text-sm text-zinc-400">
-                      Draw {formatRaffleDrawDate(raffle.draw_date)}
-                    </p>
-                    <p className="mt-2 text-sm text-zinc-400">
-                      {Number(raffle.ticket_price).toFixed(2)} / entry ·{" "}
-                      {raffle.total_entries}/{raffle.max_entries} filled
-                    </p>
-                    <Link
-                      href={`/raffles/${raffle.id}`}
-                      className="mt-5 inline-block border border-white/25 px-5 py-2.5 text-sm text-white transition hover:border-panteron-violet hover:text-panteron-violet"
-                    >
-                      View draw →
-                    </Link>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <RaffleActiveList raffles={raffles} />
           )}
 
           {pastRaffles.length > 0 ? (
             <div className="mt-24">
               <p className="text-xs uppercase tracking-[0.3em] text-panteron-violet">Past draws</p>
               <h2 className="font-display mt-4 text-3xl sm:text-4xl">Winners in the circle</h2>
-              <ul className="mt-12 divide-y divide-white/10 border-y border-white/10">
-                {pastRaffles.map((raffle) => (
-                  <li
-                    key={raffle.id}
-                    className="grid gap-4 py-10 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] md:items-end"
-                  >
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">Ended</p>
-                      <h2 className="font-display mt-3 text-3xl">
-                        <Link
-                          href={`/raffles/${raffle.id}`}
-                          className="transition hover:text-panteron-violet"
-                        >
-                          {raffle.title}
-                        </Link>
-                      </h2>
-                      {raffle.winner_display_name ? (
-                        <p className="mt-2 text-lg text-panteron-violet">
-                          Winner · {raffle.winner_display_name}
-                          {raffle.winner_number != null ? (
-                            <span className="text-zinc-400"> · ticket #{raffle.winner_number}</span>
-                          ) : null}
-                        </p>
-                      ) : null}
-                    </div>
-                    <div className="md:text-right">
-                      <p className="text-sm text-zinc-400">
-                        Draw {formatRaffleDrawDate(raffle.draw_date)}
-                      </p>
-                      <Link
-                        href={`/raffles/${raffle.id}`}
-                        className="mt-5 inline-block text-sm text-zinc-300 transition hover:text-panteron-violet"
-                      >
-                        View results →
-                      </Link>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              <RaffleEndedList raffles={pastRaffles} />
             </div>
           ) : null}
         </div>

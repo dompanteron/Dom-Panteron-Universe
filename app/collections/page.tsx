@@ -3,6 +3,7 @@ import Link from "next/link";
 import CollectionBlock from "@/components/shop/CollectionBlock";
 import { getActiveCollectionsWithProducts } from "@/lib/shop/collections";
 import { visibleProductsForCollection } from "@/lib/shop/collection-reveal";
+import { productLineHubs } from "@/lib/shop/product-lines";
 
 export const metadata: Metadata = {
   title: "Collections | Dom Panteron Universe",
@@ -30,15 +31,26 @@ export default async function CollectionsPage() {
         />
         <div className="relative z-10 mx-auto max-w-5xl px-6 py-24 text-center md:py-32">
           <p className="text-sm uppercase tracking-[0.35em] text-panteron-violet">
-            Ready-made fashion
+            Shop
           </p>
           <h1 className="font-display mt-4 text-5xl font-semibold md:text-7xl">
             Collections
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-xl text-zinc-300">
-            Each line tells a story. Explore the drop, pick your size, order the piece — no
-            custom studio.
+            Fashion, champagne, HOME, and water — one checkout. Explore the drop, pick your
+            size or variant, order the piece.
           </p>
+          <div className="mx-auto mt-8 flex max-w-2xl flex-wrap justify-center gap-3">
+            {productLineHubs.map((hub) => (
+              <Link
+                key={hub.path}
+                href={hub.path}
+                className="border border-white/20 px-4 py-2 text-sm transition hover:border-panteron-violet hover:text-panteron-violet"
+              >
+                {hub.navLabel}
+              </Link>
+            ))}
+          </div>
           <p className="mx-auto mt-3 max-w-xl text-base text-zinc-500">
             Conscious streetwear grouped by mood and frequency. Same spirit as a curated
             lookbook — built for Dom Panteron.

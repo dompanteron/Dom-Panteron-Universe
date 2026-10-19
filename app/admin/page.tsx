@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import AdminOpsSnapshot from "@/components/admin/AdminOpsSnapshot";
+import { fetchAdminLineOpsSnapshot } from "@/lib/admin/line-ops-stats";
 import { requireAdmin } from "@/lib/members";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -47,6 +49,8 @@ export default async function AdminHomePage() {
   let musicActive = 0;
   let rafflesDraft = 0;
   let loadError: string | null = null;
+  let opsSnapshot: Awaited<ReturnType<typeof fetchAdminLineOpsSnapshot>> | null = null;
+  let opsError: string | null = null;
 
   try {
     [
@@ -80,6 +84,12 @@ export default async function AdminHomePage() {
     ]);
   } catch (error) {
     loadError = error instanceof Error ? error.message : "Could not load counts.";
+  }
+
+  try {
+    opsSnapshot = await fetchAdminLineOpsSnapshot();
+  } catch (error) {
+    opsError = error instanceof Error ? error.message : "Could not load line ops.";
   }
 
   const cards = [
@@ -152,6 +162,9 @@ export default async function AdminHomePage() {
           </Link>
         ))}
       </div>
+
+      {opsError ? <p className="mt-12 text-sm text-red-400">{opsError}</p> : null}
+      {opsSnapshot ? <AdminOpsSnapshot snapshot={opsSnapshot} /> : null}
     </section>
   );
 }

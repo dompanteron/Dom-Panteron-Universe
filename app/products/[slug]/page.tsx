@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import ProductAttributesList from "@/components/shop/ProductAttributesList";
 import ProductGallery from "@/components/shop/ProductGallery";
 import ProductPurchasePanel from "@/components/shop/ProductPurchasePanel";
+import { productLineHubs } from "@/lib/shop/product-lines";
 import { ensureCurrentMember } from "@/lib/members";
 import { getPaymentOptionsForUi } from "@/lib/payments/payment-providers";
 import { getCollectionRevealState } from "@/lib/shop/collection-reveal";
 import { buildShareMetadata } from "@/lib/site-metadata";
+import { collectionCheckoutRules } from "@/lib/shop/checkout-rules";
+import { isProductAvailableForPurchase } from "@/lib/shop/product-availability";
 import {
   getProductBySlug,
   parseProductImages,
@@ -44,21 +48,43 @@ export default async function ProductPage({ params }: Props) {
   const { member } = await ensureCurrentMember();
   const sizes = parseProductSizes(product.sizes);
   const images = parseProductImages(product);
-  const isSold = product.status === "sold";
+  const isSold = !isProductAvailableForPurchase(product);
+  const checkoutRules = collectionCheckoutRules(product.collection);
   const price = Number(product.price);
   const paymentOptions = getPaymentOptionsForUi();
   const purchaseLocked = product.collection
     ? !getCollectionRevealState(product.collection).allowPurchase
     : false;
+
+  const line = product.collection?.product_line ?? null;
+  const lineHub =
+    line && line !== "fashion" ? productLineHubs.find((hub) => hub.key === line) : null;
+  const lineEyebrow =
+    line === "champagne"
+      ? "Champagne"
+      : line === "home"
+        ? "HOME"
+        : line === "water"
+          ? "Water"
+          : "Ready-made";
+
   return (
     <main className="text-white">
       <section className="border-b border-white/10 bg-panteron-black">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-500">
             <Link href="/collections" className="transition hover:text-panteron-violet">
-              Collections
+              Shop
             </Link>
             <span aria-hidden>/</span>
+            {lineHub ? (
+              <>
+                <Link href={lineHub.path} className="transition hover:text-panteron-violet">
+                  {lineHub.navLabel}
+                </Link>
+                <span aria-hidden>/</span>
+              </>
+            ) : null}
             {product.collection ? (
               <>
                 <Link
@@ -80,9 +106,7 @@ export default async function ProductPage({ params }: Props) {
           <ProductGallery images={images} title={product.title} />
 
           <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-panteron-violet">
-              Ready-made
-            </p>
+            <p className="text-xs uppercase tracking-[0.35em] text-panteron-violet">{lineEyebrow}</p>
             <h1 className="font-display mt-3 text-4xl font-semibold sm:text-5xl">
               {product.title}
             </h1>
@@ -96,6 +120,8 @@ export default async function ProductPage({ params }: Props) {
                 <p className="mt-4 text-lg leading-relaxed text-zinc-300">{product.description}</p>
               </div>
             ) : null}
+
+            <ProductAttributesList attributes={product.attributes} productLine={line} />
 
             <ProductPurchasePanel
               productSlug={product.slug}
@@ -112,6 +138,8 @@ export default async function ProductPage({ params }: Props) {
               paymentSumup={paymentOptions.sumup}
               paymentPaypal={paymentOptions.paypal}
               purchaseLocked={purchaseLocked}
+              checkoutRules={checkoutRules}
+              stockQuantity={product.stock_quantity}
             />
           </div>
         </div>

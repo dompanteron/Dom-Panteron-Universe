@@ -1,3 +1,5 @@
+import type { ProductLine } from "@/lib/shop/product-lines";
+
 export type CollectionRow = {
   id: string;
   name: string;
@@ -7,6 +9,11 @@ export type CollectionRow = {
   cover_image_url: string | null;
   display_order: number;
   status: string;
+  product_line: ProductLine | null;
+  requires_age_confirm: boolean;
+  allow_multi_quantity: boolean;
+  max_quantity_per_order: number;
+  checkout_note: string | null;
   reveal_at: string | null;
   show_items_during_countdown: boolean;
   created_at: string;
@@ -27,6 +34,8 @@ export type ProductRow = {
   main_image_url: string | null;
   display_order: number;
   status: string;
+  attributes: Record<string, string>;
+  stock_quantity: number | null;
   created_at: string;
 };
 

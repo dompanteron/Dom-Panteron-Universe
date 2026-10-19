@@ -19,14 +19,18 @@ export default async function AdminEditProductPage({
 
   const [{ data: product, error }, { data: collections }] = await Promise.all([
     admin.from("products").select("*").eq("id", params.id).maybeSingle(),
-    admin.from("collections").select("id, name").order("display_order", { ascending: true })
+    admin.from("collections").select("id, name, product_line").order("display_order", { ascending: true })
   ]);
 
   if (error || !product) {
     notFound();
   }
 
-  const collectionOptions = (collections ?? []).map((c) => ({ id: c.id, name: c.name }));
+  const collectionOptions = (collections ?? []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    product_line: c.product_line
+  }));
 
   return (
     <section className="mx-auto max-w-6xl px-6 py-16">

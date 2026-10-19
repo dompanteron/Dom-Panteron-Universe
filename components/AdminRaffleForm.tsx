@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toDatetimeLocal } from "@/lib/raffles";
+import { PRODUCT_LINE_VALUES } from "@/lib/shop/product-lines";
 
 export type RaffleFormValues = {
   id?: string;
@@ -14,6 +15,7 @@ export type RaffleFormValues = {
   ticket_limit_per_user?: number | string | null;
   draw_date: string;
   status: string;
+  product_line?: string | null;
 };
 
 export default function AdminRaffleForm({ raffle }: { raffle?: RaffleFormValues }) {
@@ -31,6 +33,9 @@ export default function AdminRaffleForm({ raffle }: { raffle?: RaffleFormValues 
     raffle?.draw_date ? toDatetimeLocal(raffle.draw_date) : ""
   );
   const [status, setStatus] = useState(raffle?.status ?? "draft");
+  const [productLine, setProductLine] = useState(
+    raffle?.product_line ? raffle.product_line : "universe"
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -55,7 +60,8 @@ export default function AdminRaffleForm({ raffle }: { raffle?: RaffleFormValues 
             max_entries: maxEntries,
             ticket_limit_per_user: ticketLimitPerUser.trim() ? ticketLimitPerUser : null,
             draw_date: drawDate,
-            status
+            status,
+            product_line: productLine === "universe" ? null : productLine
           })
         }
       );
@@ -75,6 +81,7 @@ export default function AdminRaffleForm({ raffle }: { raffle?: RaffleFormValues 
         setTicketLimitPerUser("");
         setDrawDate("");
         setStatus("draft");
+        setProductLine("universe");
       }
 
       setMessage(isEdit ? "Raffle saved." : "Raffle created.");
@@ -127,6 +134,27 @@ export default function AdminRaffleForm({ raffle }: { raffle?: RaffleFormValues 
           className={fieldClass}
           placeholder="What the winner receives"
         />
+      </label>
+
+      <label className="block md:col-span-2">
+        <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">
+          Product line
+        </span>
+        <select
+          value={productLine}
+          onChange={(event) => setProductLine(event.target.value)}
+          className={`${fieldClass} bg-panteron-black`}
+        >
+          <option value="universe">Universe-wide (all raffles page)</option>
+          {PRODUCT_LINE_VALUES.map((line) => (
+            <option key={line} value={line}>
+              {line}
+            </option>
+          ))}
+        </select>
+        <span className="mt-2 block text-xs text-zinc-500">
+          Champagne / HOME / water draws also appear on that line&apos;s shop page.
+        </span>
       </label>
 
       <label className="block">

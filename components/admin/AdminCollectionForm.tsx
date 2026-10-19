@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import AdminImageUpload from "@/components/admin/AdminImageUpload";
 import { toDatetimeLocal } from "@/lib/raffles";
+import { PRODUCT_LINE_VALUES } from "@/lib/shop/product-lines";
 
 export type CollectionFormValues = {
   id?: string;
@@ -14,6 +15,11 @@ export type CollectionFormValues = {
   cover_image_url: string | null;
   display_order: number;
   status: string;
+  product_line: string | null;
+  requires_age_confirm?: boolean;
+  allow_multi_quantity?: boolean;
+  max_quantity_per_order?: number;
+  checkout_note?: string | null;
   reveal_at: string | null;
   show_items_during_countdown: boolean;
 };
@@ -35,6 +41,17 @@ export default function AdminCollectionForm({
   const [coverUrl, setCoverUrl] = useState(collection?.cover_image_url ?? "");
   const [displayOrder, setDisplayOrder] = useState(String(collection?.display_order ?? 0));
   const [status, setStatus] = useState(collection?.status ?? "draft");
+  const [productLine, setProductLine] = useState(collection?.product_line ?? "");
+  const [requiresAgeConfirm, setRequiresAgeConfirm] = useState(
+    collection?.requires_age_confirm ?? false
+  );
+  const [allowMultiQuantity, setAllowMultiQuantity] = useState(
+    collection?.allow_multi_quantity !== false
+  );
+  const [maxQuantity, setMaxQuantity] = useState(
+    String(collection?.max_quantity_per_order ?? 10)
+  );
+  const [checkoutNote, setCheckoutNote] = useState(collection?.checkout_note ?? "");
   const [revealAt, setRevealAt] = useState(
     collection?.reveal_at ? toDatetimeLocal(collection.reveal_at) : ""
   );
@@ -59,6 +76,11 @@ export default function AdminCollectionForm({
       cover_image_url: coverUrl,
       display_order: displayOrder,
       status,
+      product_line: productLine || null,
+      requires_age_confirm: requiresAgeConfirm,
+      allow_multi_quantity: allowMultiQuantity,
+      max_quantity_per_order: maxQuantity,
+      checkout_note: checkoutNote,
       reveal_at: revealAt || null,
       show_items_during_countdown: showDuringCountdown
     };
@@ -134,6 +156,67 @@ export default function AdminCollectionForm({
           <option value="active">active</option>
         </select>
       </label>
+      <label className="block">
+        <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">Product line</span>
+        <select
+          value={productLine}
+          onChange={(e) => setProductLine(e.target.value)}
+          className={`${fieldClass} bg-panteron-black`}
+        >
+          <option value="">Not set</option>
+          {PRODUCT_LINE_VALUES.map((line) => (
+            <option key={line} value={line}>
+              {line}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="md:col-span-2 border border-white/10 p-4 sm:p-5">
+        <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">Checkout rules</p>
+        <label className="mt-4 flex items-center gap-3">
+          <input
+            type="checkbox"
+            checked={requiresAgeConfirm}
+            onChange={(e) => setRequiresAgeConfirm(e.target.checked)}
+            className="h-4 w-4"
+          />
+          <span className="text-sm text-zinc-400">Require 18+ confirmation at checkout</span>
+        </label>
+        <label className="mt-3 flex items-center gap-3">
+          <input
+            type="checkbox"
+            checked={allowMultiQuantity}
+            onChange={(e) => setAllowMultiQuantity(e.target.checked)}
+            className="h-4 w-4"
+          />
+          <span className="text-sm text-zinc-400">Allow quantity greater than 1</span>
+        </label>
+        <label className="mt-4 block">
+          <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">
+            Max quantity per order
+          </span>
+          <input
+            type="number"
+            min={1}
+            max={99}
+            value={maxQuantity}
+            onChange={(e) => setMaxQuantity(e.target.value)}
+            className={fieldClass}
+          />
+        </label>
+        <label className="mt-4 block">
+          <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">
+            Checkout note (optional)
+          </span>
+          <textarea
+            rows={2}
+            value={checkoutNote}
+            onChange={(e) => setCheckoutNote(e.target.value)}
+            className={fieldClass}
+            placeholder="Shown above the order form — shipping or legal copy."
+          />
+        </label>
+      </div>
       <label className="block">
         <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">Reveal at (optional)</span>
         <input type="datetime-local" value={revealAt} onChange={(e) => setRevealAt(e.target.value)} className={fieldClass} />

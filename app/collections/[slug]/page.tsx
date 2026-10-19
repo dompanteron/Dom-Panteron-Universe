@@ -6,6 +6,7 @@ import ProductCard from "@/components/shop/ProductCard";
 import { buildShareMetadata } from "@/lib/site-metadata";
 import { getCollectionBySlug } from "@/lib/shop/collections";
 import { visibleProductsForCollection } from "@/lib/shop/collection-reveal";
+import { productLineHubs } from "@/lib/shop/product-lines";
 
 type Props = {
   params: { slug: string };
@@ -38,17 +39,26 @@ export default async function CollectionDetailPage({ params }: Props) {
     collection.products
   );
 
+  const lineHub =
+    collection.product_line &&
+    collection.product_line !== "fashion" &&
+    productLineHubs.find((hub) => hub.key === collection.product_line);
+
   return (
     <main className="text-white">
       <section className="relative isolate overflow-hidden bg-panteron-black">
         <div aria-hidden className="absolute inset-0 bg-panteron-gradient" />
         <div className="relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-24 sm:px-6 lg:px-8 lg:pt-28">
-          <Link
-            href="/collections"
-            className="text-sm text-zinc-400 transition hover:text-panteron-violet"
-          >
-            ← All collections
-          </Link>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+            {lineHub ? (
+              <Link href={lineHub.path} className="text-zinc-400 transition hover:text-panteron-violet">
+                ← {lineHub.navLabel}
+              </Link>
+            ) : null}
+            <Link href="/collections" className="text-zinc-400 transition hover:text-panteron-violet">
+              {lineHub ? "All collections" : "← All collections"}
+            </Link>
+          </div>
 
           <div className="mt-10 text-center md:mt-12">
             <p className="text-xs uppercase tracking-[0.35em] text-panteron-violet">

@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { notifyAdminShopOrder } from "@/lib/email/send-admin-notification";
 import { sendProductOrderEmail } from "@/lib/email/send-product-order";
-import { markProductSoldForOrder } from "@/lib/shop/mark-product-sold";
+import { applyProductInventoryForOrder } from "@/lib/shop/product-inventory";
 import { getSiteUrl } from "@/lib/site-url";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -116,7 +116,7 @@ export async function completeProductOrderPayment(input: {
     shippingSummary: shippingSummary(order) || undefined
   });
 
-  await markProductSoldForOrder(order.product_id);
+  await applyProductInventoryForOrder(order.product_id, order.quantity);
 
   return { completed: true as const, orderId: order.id };
 }

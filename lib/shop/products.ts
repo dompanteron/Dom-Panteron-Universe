@@ -4,7 +4,17 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 export type ProductWithCollection = ProductRow & {
   collection: Pick<
     CollectionRow,
-    "id" | "name" | "slug" | "status" | "reveal_at" | "show_items_during_countdown"
+    | "id"
+    | "name"
+    | "slug"
+    | "status"
+    | "product_line"
+    | "requires_age_confirm"
+    | "allow_multi_quantity"
+    | "max_quantity_per_order"
+    | "checkout_note"
+    | "reveal_at"
+    | "show_items_during_countdown"
   > | null;
 };
 
@@ -50,12 +60,19 @@ export async function getProductBySlug(slug: string): Promise<ProductWithCollect
       main_image_url,
       display_order,
       status,
+      attributes,
+      stock_quantity,
       created_at,
       collections (
         id,
         name,
         slug,
         status,
+        product_line,
+        requires_age_confirm,
+        allow_multi_quantity,
+        max_quantity_per_order,
+        checkout_note,
         reveal_at,
         show_items_during_countdown
       )

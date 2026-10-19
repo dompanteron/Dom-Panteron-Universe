@@ -1,3 +1,4 @@
+import type { ProductLineHubKey } from "@/lib/shop/product-lines";
 import type { CollectionRow, ProductRow } from "@/lib/shop/types";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 
@@ -19,6 +20,11 @@ export async function getActiveCollectionsWithProducts(): Promise<CollectionWith
       cover_image_url,
       display_order,
       status,
+      product_line,
+      requires_age_confirm,
+      allow_multi_quantity,
+      max_quantity_per_order,
+      checkout_note,
       reveal_at,
       show_items_during_countdown,
       created_at,
@@ -37,6 +43,8 @@ export async function getActiveCollectionsWithProducts(): Promise<CollectionWith
         main_image_url,
         display_order,
         status,
+        attributes,
+        stock_quantity,
         created_at
       )
     `
@@ -58,6 +66,15 @@ export async function getActiveCollectionsWithProducts(): Promise<CollectionWith
   }));
 }
 
+export async function getActiveCollectionsByProductLine(
+  line: ProductLineHubKey
+): Promise<CollectionWithProducts[]> {
+  const all = await getActiveCollectionsWithProducts();
+  return all
+    .filter((collection) => collection.product_line === line)
+    .sort((a, b) => a.display_order - b.display_order);
+}
+
 const collectionSelect = `
   id,
   name,
@@ -67,6 +84,11 @@ const collectionSelect = `
   cover_image_url,
   display_order,
   status,
+  product_line,
+  requires_age_confirm,
+  allow_multi_quantity,
+  max_quantity_per_order,
+  checkout_note,
   reveal_at,
   show_items_during_countdown,
   created_at,
@@ -85,6 +107,8 @@ const collectionSelect = `
     main_image_url,
     display_order,
     status,
+    attributes,
+    stock_quantity,
     created_at
   )
 `;

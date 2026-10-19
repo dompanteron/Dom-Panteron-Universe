@@ -8,7 +8,12 @@ import { resolvePaymentProvider } from "@/lib/payments/payment-providers";
 import { createSumUpHostedCheckout } from "@/lib/payments/sumup-api";
 import { getSumUpCredentials } from "@/lib/payments/sumup-config";
 import { getSiteUrl } from "@/lib/site-url";
+import {
+  collectionCheckoutRules,
+  validateOrderQuantity
+} from "@/lib/shop/checkout-rules";
 import { getCollectionRevealState } from "@/lib/shop/collection-reveal";
+import { isProductAvailableForPurchase } from "@/lib/shop/product-availability";
 import { parseProductSizes } from "@/lib/shop/products";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -35,6 +40,7 @@ export async function POST(
     shipping_postal_code?: string;
     shipping_country?: string;
     paymentProvider?: string;
+    age_confirmed?: boolean;
   };
 
   const customerName = body.customer_name?.trim() || member.full_name?.trim();
@@ -45,13 +51,6 @@ export async function POST(
   if (!customerName || !customerEmail) {
     return NextResponse.json(
       { ok: false, error: "Name and email are required." },
-      { status: 400 }
-    );
-  }
-
-  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10) {
-    return NextResponse.json(
-      { ok: false, error: "Quantity must be between 1 and 10." },
       { status: 400 }
     );
   }
@@ -68,8 +67,13 @@ export async function POST(
       currency,
       sizes,
       status,
+      stock_quantity,
       collections (
         status,
+        requires_age_confirm,
+        allow_multi_quantity,
+        max_quantity_per_order,
+        checkout_note,
         reveal_at,
         show_items_during_countdown
       )
@@ -82,7 +86,7 @@ export async function POST(
     return NextResponse.json({ ok: false, error: "Product not found." }, { status: 404 });
   }
 
-  if (product.status !== "active") {
+  if (!isProductAvailableForPurchase(product)) {
     return NextResponse.json(
       { ok: false, error: "This piece is not available to order." },
       { status: 400 }
@@ -104,6 +108,25 @@ export async function POST(
         { status: 400 }
       );
     }
+  }
+
+  const checkoutRules = collectionCheckoutRules(collection);
+
+  if (checkoutRules.requires_age_confirm && body.age_confirmed !== true) {
+    return NextResponse.json(
+      { ok: false, error: "You must confirm you are 18 or older to order this item." },
+      { status: 400 }
+    );
+  }
+
+  const quantityCheck = validateOrderQuantity({
+    quantity,
+    rules: checkoutRules,
+    stockQuantity: product.stock_quantity
+  });
+
+  if (!quantityCheck.ok) {
+    return NextResponse.json({ ok: false, error: quantityCheck.error }, { status: 400 });
   }
 
   const allowedSizes = parseProductSizes(product.sizes);
@@ -131,6 +154,7 @@ export async function POST(
       shipping_city: body.shipping_city?.trim() || null,
       shipping_postal_code: body.shipping_postal_code?.trim() || null,
       shipping_country: body.shipping_country?.trim() || null,
+      buyer_age_confirmed: checkoutRules.requires_age_confirm ? true : null,
       status: "pending"
     })
     .select("id")

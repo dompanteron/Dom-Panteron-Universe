@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import AdminMenu from "@/components/AdminMenu";
+import SiteHeaderShopNav from "@/components/SiteHeaderShopNav";
 import { useCurrentMember } from "@/components/useCurrentMember";
 import { mainNav } from "@/lib/navigation";
 
@@ -56,6 +57,10 @@ export default function SiteHeader() {
                   {authItem.label}
                 </Link>
               );
+            }
+
+            if ("shopMenu" in item && item.shopMenu) {
+              return <SiteHeaderShopNav key={item.href} variant="desktop" />;
             }
 
             return (
@@ -122,6 +127,10 @@ export default function SiteHeader() {
                   {authItem.label}
                 </Link>
               );
+            }
+
+            if ("shopMenu" in item && item.shopMenu) {
+              return <SiteHeaderShopNav key={item.href} variant="mobile" />;
             }
 
             return (

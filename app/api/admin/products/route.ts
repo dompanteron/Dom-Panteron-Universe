@@ -1,6 +1,9 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { ensureCurrentMember } from "@/lib/members";
+import { isProductLine } from "@/lib/shop/product-lines";
+import { parseStockQuantityInput } from "@/lib/shop/parse-stock-quantity";
+import { productAttributesFromRequestBody } from "@/lib/shop/save-product-attributes";
 import { parseImagesInput, parseSizesInput, slugify } from "@/lib/shop/slug";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -37,6 +40,23 @@ export async function POST(request: Request) {
     compareRaw === "" || compareRaw == null ? null : Number(compareRaw);
 
   const admin = createAdminClient();
+  const { data: collectionRow } = await admin
+    .from("collections")
+    .select("product_line")
+    .eq("id", collectionId)
+    .maybeSingle();
+
+  const productLine =
+    collectionRow?.product_line && isProductLine(collectionRow.product_line)
+      ? collectionRow.product_line
+      : null;
+
+  const attributes = productAttributesFromRequestBody(body, productLine);
+  const stockQuantity = parseStockQuantityInput(body.stock_quantity);
+  if (body.stock_quantity !== undefined && body.stock_quantity !== "" && body.stock_quantity != null && stockQuantity === null) {
+    return NextResponse.json({ ok: false, error: "Invalid stock quantity." }, { status: 400 });
+  }
+
   const { data, error } = await admin
     .from("products")
     .insert({
@@ -52,7 +72,9 @@ export async function POST(request: Request) {
       images: parseImagesInput(String(body.images ?? "")),
       main_image_url: String(body.main_image_url ?? "").trim() || null,
       display_order: Number(body.display_order ?? 0),
-      status
+      status,
+      attributes,
+      stock_quantity: stockQuantity
     })
     .select("id, slug")
     .single();

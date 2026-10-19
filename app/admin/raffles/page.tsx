@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import AdminRaffleForm from "@/components/AdminRaffleForm";
 import { requireAdmin } from "@/lib/members";
+import { raffleLineLabel } from "@/lib/raffles/raffle-line-display";
+import type { ProductLine } from "@/lib/shop/product-lines";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const metadata: Metadata = {
@@ -17,6 +19,7 @@ type AdminRaffle = {
   total_entries: number;
   draw_date: string;
   status: string;
+  product_line: ProductLine | null;
 };
 
 function formatDrawDate(value: string) {
@@ -35,7 +38,7 @@ export default async function AdminRafflesPage() {
   const { data, error } = await admin
     .from("raffles")
     .select(
-      "id, title, subtitle, ticket_price, max_entries, total_entries, draw_date, status"
+      "id, title, subtitle, ticket_price, max_entries, total_entries, draw_date, status, product_line"
     )
     .order("draw_date", { ascending: false });
 
@@ -94,6 +97,9 @@ export default async function AdminRafflesPage() {
                     {raffle.subtitle ? (
                       <p className="mt-1 text-zinc-500">{raffle.subtitle}</p>
                     ) : null}
+                    <p className="mt-1 text-xs uppercase tracking-[0.15em] text-zinc-600">
+                      {raffleLineLabel(raffle.product_line)}
+                    </p>
                   </td>
                   <td
                     className={`py-5 pr-4 ${

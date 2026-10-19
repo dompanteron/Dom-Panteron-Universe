@@ -6,6 +6,7 @@ import { ensureCurrentMember } from "@/lib/members";
 import { getPaymentOptionsForUi } from "@/lib/payments/payment-providers";
 import { sumMemberRaffleEntries } from "@/lib/raffle-entries";
 import { formatRaffleDrawDate, type PublicRaffle } from "@/lib/raffles";
+import { raffleLineHref, raffleLineLabel } from "@/lib/raffles/raffle-line-display";
 import { buildShareMetadata } from "@/lib/site-metadata";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 
@@ -37,7 +38,7 @@ export default async function RaffleDetailPage({ params }: Props) {
   const { data, error } = await supabase
     .from("raffles")
     .select(
-      "id, title, subtitle, description, ticket_price, max_entries, total_entries, ticket_limit_per_user, draw_date, status, winner_number, winner_initials, winner_display_name"
+      "id, title, subtitle, description, ticket_price, max_entries, total_entries, ticket_limit_per_user, draw_date, status, product_line, winner_number, winner_initials, winner_display_name"
     )
     .eq("id", params.id)
     .maybeSingle();
@@ -73,14 +74,22 @@ export default async function RaffleDetailPage({ params }: Props) {
       <section className="relative isolate overflow-hidden bg-panteron-black">
         <div aria-hidden className="absolute inset-0 bg-panteron-gradient" />
         <div className="relative z-10 mx-auto max-w-6xl px-6 pb-16 pt-24 sm:pb-20 sm:pt-28">
-          <Link
-            href="/raffles"
-            className="text-sm text-zinc-400 transition hover:text-panteron-violet"
-          >
-            ← All raffles
-          </Link>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+            <Link href="/raffles" className="text-zinc-400 transition hover:text-panteron-violet">
+              ← All raffles
+            </Link>
+            {raffle.product_line ? (
+              <Link
+                href={raffleLineHref(raffle.product_line)}
+                className="text-zinc-400 transition hover:text-panteron-violet"
+              >
+                {raffleLineLabel(raffle.product_line)} line
+              </Link>
+            ) : null}
+          </div>
           <p className="mt-8 text-xs uppercase tracking-[0.35em] text-panteron-violet">
-            {isEnded ? "Past draw" : "Active draw"}
+            {isEnded ? "Past draw" : "Active draw"} ·{" "}
+            {raffleLineLabel(raffle.product_line ?? null)}
           </p>
           <h1 className="font-display mt-4 max-w-4xl text-4xl font-semibold leading-[1.05] sm:text-5xl md:text-6xl">
             {raffle.title}

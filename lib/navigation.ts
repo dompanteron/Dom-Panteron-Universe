@@ -1,6 +1,6 @@
 export const mainNav = [
   { href: "/", label: "Home" },
-  { href: "/collections", label: "Collections" },
+  { href: "/collections", label: "Shop", shopMenu: true as const },
   { href: "/music", label: "Music" },
   { href: "/raffles", label: "Raffles" },
   { href: "/about", label: "About" },

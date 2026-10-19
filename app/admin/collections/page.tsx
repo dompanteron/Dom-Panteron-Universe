@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import AdminCollectionForm from "@/components/admin/AdminCollectionForm";
 import { requireAdmin } from "@/lib/members";
+import { raffleLineLabel } from "@/lib/raffles/raffle-line-display";
+import type { ProductLine } from "@/lib/shop/product-lines";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const metadata: Metadata = {
@@ -13,7 +15,7 @@ export default async function AdminCollectionsPage() {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("collections")
-    .select("id, name, slug, status, display_order")
+    .select("id, name, slug, status, display_order, product_line")
     .order("display_order", { ascending: true });
 
   const collections = data ?? [];
@@ -54,6 +56,7 @@ export default async function AdminCollectionsPage() {
               <tr className="text-xs uppercase tracking-[0.2em] text-zinc-500">
                 <th className="py-4 pr-4 font-normal">Name</th>
                 <th className="py-4 pr-4 font-normal">Slug</th>
+                <th className="py-4 pr-4 font-normal">Line</th>
                 <th className="py-4 pr-4 font-normal">Status</th>
                 <th className="py-4 pr-4 font-normal">Order</th>
                 <th className="py-4 font-normal"> </th>
@@ -64,6 +67,9 @@ export default async function AdminCollectionsPage() {
                 <tr key={row.id} className="text-sm text-zinc-300">
                   <td className="py-4 pr-4 font-display text-xl text-white">{row.name}</td>
                   <td className="py-4 pr-4">{row.slug}</td>
+                  <td className="py-4 pr-4 text-zinc-400">
+                    {raffleLineLabel((row.product_line as ProductLine | null) ?? "fashion")}
+                  </td>
                   <td className="py-4 pr-4 text-panteron-violet">{row.status}</td>
                   <td className="py-4 pr-4">{row.display_order}</td>
                   <td className="py-4">
