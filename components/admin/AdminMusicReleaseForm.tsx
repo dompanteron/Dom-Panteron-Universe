@@ -131,7 +131,15 @@ export default function AdminMusicReleaseForm({
       />
       <label className="block md:col-span-2">
         <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">Listen URL</span>
-        <input value={listenUrl} onChange={(e) => setListenUrl(e.target.value)} className={fieldClass} placeholder="Spotify, SoundCloud, YouTube…" />
+        <input
+          value={listenUrl}
+          onChange={(e) => setListenUrl(e.target.value)}
+          className={fieldClass}
+          placeholder="https://open.spotify.com/track/… or YouTube / SoundCloud"
+        />
+        <span className="mt-2 block text-xs text-zinc-500">
+          Spotify, YouTube, and SoundCloud URLs embed on the public music page.
+        </span>
       </label>
       <label className="block">
         <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">Release date (optional)</span>

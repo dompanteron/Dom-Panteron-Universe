@@ -3,18 +3,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import ProductImage from "@/components/shop/ProductImage";
+import CollectionCountdown from "@/components/shop/CollectionCountdown";
+import { getCollectionRevealState } from "@/lib/shop/collection-reveal";
 import type { CollectionRow, ProductRow } from "@/lib/shop/types";
 import { productImageUrl } from "@/lib/shop/product-images";
 
 const CYCLE_MS = 4000;
-
-function formatCountdown(ms: number) {
-  const days = Math.floor(ms / 86400000);
-  const hours = Math.floor((ms % 86400000) / 3600000);
-  const minutes = Math.floor((ms % 3600000) / 60000);
-  const seconds = Math.floor((ms % 60000) / 1000);
-  return { days, hours, minutes, seconds };
-}
 
 function ThumbButton({
   src,
@@ -62,19 +56,9 @@ export default function CollectionBlock({
   isLast: boolean;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [now, setNow] = useState(() => Date.now());
-
-  const revealAt = collection.reveal_at ? new Date(collection.reveal_at).getTime() : null;
-  const isRevealed = !revealAt || revealAt <= now;
-  const msLeft = revealAt && revealAt > now ? revealAt - now : 0;
-
-  useEffect(() => {
-    if (msLeft <= 0) {
-      return;
-    }
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [msLeft]);
+  const reveal = getCollectionRevealState(collection);
+  const isRevealed = reveal.isLive;
+  const showItems = reveal.showProducts && products.length > 0;
 
   const imageItems = products.map((product) => ({
     src: productImageUrl(product),
@@ -84,8 +68,6 @@ export default function CollectionBlock({
   const row1 = imageItems.slice(0, 4);
   const row2 = imageItems.slice(4, 8);
   const row3 = imageItems.slice(8);
-  const showItems = isRevealed || (collection.show_items_during_countdown && count > 0);
-
   useEffect(() => {
     if (count <= 1) {
       return;
@@ -127,33 +109,12 @@ export default function CollectionBlock({
           →
         </span>
       </Link>
-      {count === 0 && !revealAt ? (
+      {count === 0 && !reveal.revealAt ? (
         <p className="mt-4 text-lg italic text-zinc-500">Coming soon</p>
       ) : null}
-      {!isRevealed && msLeft > 0 ? (
-        <div className="mt-6 flex flex-wrap gap-4">
-          {(() => {
-            const { days, hours, minutes, seconds } = formatCountdown(msLeft);
-            return (
-              <>
-                {[
-                  ["Days", days],
-                  ["Hours", hours],
-                  ["Min", minutes],
-                  ["Sec", seconds]
-                ].map(([label, value]) => (
-                  <div key={label as string} className="flex flex-col items-center">
-                    <span className="font-display text-2xl tabular-nums text-white md:text-3xl">
-                      {value as number}
-                    </span>
-                    <span className="text-xs uppercase tracking-wider text-zinc-500">
-                      {label as string}
-                    </span>
-                  </div>
-                ))}
-              </>
-            );
-          })()}
+      {!isRevealed && reveal.revealAt ? (
+        <div className="mt-6">
+          <CollectionCountdown revealAt={reveal.revealAt} compact />
         </div>
       ) : null}
       {showItems && (row1.length > 0 || row2.length > 0) ? (

@@ -6,6 +6,10 @@ export type PayPalOrder = {
   id: string;
   status: string;
   links?: PayPalLink[];
+  purchase_units?: {
+    reference_id?: string;
+    custom_id?: string;
+  }[];
 };
 
 let cachedToken: { value: string; expiresAt: number } | null = null;
@@ -14,7 +18,7 @@ function formatAmount(amount: number) {
   return amount.toFixed(2);
 }
 
-async function getAccessToken() {
+export async function getPayPalAccessToken() {
   const creds = getPayPalCredentials();
   if (!creds) {
     throw new Error("PayPal is not configured");
@@ -65,7 +69,7 @@ export async function createPayPalCheckoutOrder(input: {
     throw new Error("PayPal is not configured");
   }
 
-  const token = await getAccessToken();
+  const token = await getPayPalAccessToken();
   const response = await fetch(`${creds.apiBase}/v2/checkout/orders`, {
     method: "POST",
     headers: {
@@ -119,7 +123,7 @@ export async function fetchPayPalOrder(paypalOrderId: string) {
     throw new Error("PayPal is not configured");
   }
 
-  const token = await getAccessToken();
+  const token = await getPayPalAccessToken();
   const response = await fetch(`${creds.apiBase}/v2/checkout/orders/${paypalOrderId}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
@@ -141,7 +145,7 @@ export async function capturePayPalOrder(paypalOrderId: string) {
     throw new Error("PayPal is not configured");
   }
 
-  const token = await getAccessToken();
+  const token = await getPayPalAccessToken();
   const response = await fetch(
     `${creds.apiBase}/v2/checkout/orders/${paypalOrderId}/capture`,
     {

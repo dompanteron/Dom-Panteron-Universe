@@ -20,7 +20,8 @@ export default function ProductPurchasePanel({
   defaultName,
   defaultEmail,
   paymentSumup,
-  paymentPaypal
+  paymentPaypal,
+  purchaseLocked
 }: {
   productSlug: string;
   price: number;
@@ -29,6 +30,7 @@ export default function ProductPurchasePanel({
   sizes: string[];
   signedIn: boolean;
   isSold: boolean;
+  purchaseLocked?: boolean;
   defaultName?: string | null;
   defaultEmail?: string | null;
   paymentSumup: boolean;
@@ -110,6 +112,23 @@ export default function ProductPurchasePanel({
     } finally {
       setBusy(false);
     }
+  }
+
+  if (purchaseLocked) {
+    return (
+      <div className="mt-8 border border-white/10 bg-panteron-deep p-6">
+        <p className="font-display text-2xl text-panteron-violet">Drops soon</p>
+        <p className="mt-2 text-sm text-zinc-400">
+          This collection is still on countdown. Checkout opens when the drop goes live.
+        </p>
+        <Link
+          href="/collections"
+          className="mt-6 inline-block text-sm text-zinc-300 transition hover:text-panteron-violet"
+        >
+          Back to collections →
+        </Link>
+      </div>
+    );
   }
 
   if (isSold) {

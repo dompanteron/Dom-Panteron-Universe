@@ -6,6 +6,7 @@ export type RaffleInput = {
   description: string | null;
   ticket_price: number;
   max_entries: number;
+  ticket_limit_per_user: number | null;
   draw_date: string;
   status: string;
 };
@@ -16,6 +17,7 @@ export function parseRaffleBody(body: {
   description?: string;
   ticket_price?: number | string;
   max_entries?: number | string;
+  ticket_limit_per_user?: number | string | null;
   draw_date?: string;
   status?: string;
 }): { ok: true; data: RaffleInput } | { ok: false; error: string } {
@@ -42,6 +44,25 @@ export function parseRaffleBody(body: {
     return { ok: false, error: "Max entries must be a whole number of at least 1." };
   }
 
+  let ticketLimitPerUser: number | null = null;
+  const limitRaw = body.ticket_limit_per_user;
+  if (limitRaw !== undefined && limitRaw !== null && String(limitRaw).trim() !== "") {
+    const limit = Number(limitRaw);
+    if (!Number.isInteger(limit) || limit < 1) {
+      return {
+        ok: false,
+        error: "Per-member entry limit must be a whole number of at least 1, or leave empty."
+      };
+    }
+    if (limit > maxEntries) {
+      return {
+        ok: false,
+        error: "Per-member limit cannot exceed max entries for the draw."
+      };
+    }
+    ticketLimitPerUser = limit;
+  }
+
   const parsedDate = new Date(drawDate);
   if (Number.isNaN(parsedDate.getTime())) {
     return { ok: false, error: "Draw date is invalid." };
@@ -55,6 +76,7 @@ export function parseRaffleBody(body: {
       description: body.description?.trim() || null,
       ticket_price: ticketPrice,
       max_entries: maxEntries,
+      ticket_limit_per_user: ticketLimitPerUser,
       draw_date: parsedDate.toISOString(),
       status
     }
@@ -86,6 +108,9 @@ export type PublicRaffle = {
   ticket_limit_per_user: number | null;
   draw_date: string;
   status: string;
+  winner_number?: number | null;
+  winner_initials?: string | null;
+  winner_display_name?: string | null;
 };
 
 export function formatRaffleDrawDate(value: string, withTime = false) {

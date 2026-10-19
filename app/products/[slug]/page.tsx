@@ -5,6 +5,7 @@ import ProductGallery from "@/components/shop/ProductGallery";
 import ProductPurchasePanel from "@/components/shop/ProductPurchasePanel";
 import { ensureCurrentMember } from "@/lib/members";
 import { getPaymentOptionsForUi } from "@/lib/payments/payment-providers";
+import { getCollectionRevealState } from "@/lib/shop/collection-reveal";
 import { buildShareMetadata } from "@/lib/site-metadata";
 import {
   getProductBySlug,
@@ -46,6 +47,9 @@ export default async function ProductPage({ params }: Props) {
   const isSold = product.status === "sold";
   const price = Number(product.price);
   const paymentOptions = getPaymentOptionsForUi();
+  const purchaseLocked = product.collection
+    ? !getCollectionRevealState(product.collection).allowPurchase
+    : false;
   return (
     <main className="text-white">
       <section className="border-b border-white/10 bg-panteron-black">
@@ -107,6 +111,7 @@ export default async function ProductPage({ params }: Props) {
               defaultEmail={member?.email}
               paymentSumup={paymentOptions.sumup}
               paymentPaypal={paymentOptions.paypal}
+              purchaseLocked={purchaseLocked}
             />
           </div>
         </div>

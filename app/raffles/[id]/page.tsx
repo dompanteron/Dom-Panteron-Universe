@@ -37,7 +37,7 @@ export default async function RaffleDetailPage({ params }: Props) {
   const { data, error } = await supabase
     .from("raffles")
     .select(
-      "id, title, subtitle, description, ticket_price, max_entries, total_entries, ticket_limit_per_user, draw_date, status"
+      "id, title, subtitle, description, ticket_price, max_entries, total_entries, ticket_limit_per_user, draw_date, status, winner_number, winner_initials, winner_display_name"
     )
     .eq("id", params.id)
     .maybeSingle();
@@ -47,6 +47,12 @@ export default async function RaffleDetailPage({ params }: Props) {
   }
 
   const raffle = data as PublicRaffle;
+
+  if (raffle.status === "draft") {
+    notFound();
+  }
+
+  const isEnded = raffle.status === "ended";
   const { member } = await ensureCurrentMember();
   const spotsLeft = Math.max(0, raffle.max_entries - raffle.total_entries);
   const isFull = spotsLeft === 0;
@@ -74,7 +80,7 @@ export default async function RaffleDetailPage({ params }: Props) {
             ← All raffles
           </Link>
           <p className="mt-8 text-xs uppercase tracking-[0.35em] text-panteron-violet">
-            Active draw
+            {isEnded ? "Past draw" : "Active draw"}
           </p>
           <h1 className="font-display mt-4 max-w-4xl text-4xl font-semibold leading-[1.05] sm:text-5xl md:text-6xl">
             {raffle.title}
@@ -132,6 +138,22 @@ export default async function RaffleDetailPage({ params }: Props) {
                   </dd>
                 </div>
               ) : null}
+              {isEnded && raffle.winner_number != null ? (
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.2em] text-zinc-500">Winner</dt>
+                  <dd className="mt-1 text-lg text-panteron-violet">
+                    Ticket #{raffle.winner_number}
+                    {raffle.winner_display_name ? (
+                      <span className="block text-base text-white">
+                        {raffle.winner_display_name}
+                        {raffle.winner_initials ? (
+                          <span className="text-zinc-400"> · {raffle.winner_initials}</span>
+                        ) : null}
+                      </span>
+                    ) : null}
+                  </dd>
+                </div>
+              ) : null}
             </dl>
 
             <RaffleEnterPanel
@@ -141,6 +163,7 @@ export default async function RaffleDetailPage({ params }: Props) {
               yourEntries={yourEntries}
               ticketLimitPerUser={raffle.ticket_limit_per_user}
               isFull={isFull}
+              isEnded={isEnded}
               signedIn={Boolean(member)}
               paymentsEnabled={paymentsEnabled}
               paymentSumup={paymentOptions.sumup}

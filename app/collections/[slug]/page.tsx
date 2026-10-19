@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import CollectionRevealBanner from "@/components/shop/CollectionRevealBanner";
 import ProductCard from "@/components/shop/ProductCard";
 import { buildShareMetadata } from "@/lib/site-metadata";
 import { getCollectionBySlug } from "@/lib/shop/collections";
+import { visibleProductsForCollection } from "@/lib/shop/collection-reveal";
 
 type Props = {
   params: { slug: string };
@@ -30,6 +32,11 @@ export default async function CollectionDetailPage({ params }: Props) {
   if (!collection) {
     notFound();
   }
+
+  const { reveal, products: visibleProducts } = visibleProductsForCollection(
+    collection,
+    collection.products
+  );
 
   return (
     <main className="text-white">
@@ -66,14 +73,27 @@ export default async function CollectionDetailPage({ params }: Props) {
 
       <section className="border-t border-white/10 bg-panteron-black">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 md:py-24">
-          {collection.products.length === 0 ? (
+          {!reveal.isLive && reveal.revealAt ? (
+            <div className="mb-12">
+              <CollectionRevealBanner reveal={reveal} collectionName={collection.name} />
+            </div>
+          ) : null}
+
+          {visibleProducts.length === 0 ? (
             <p className="py-16 text-center text-lg text-zinc-500">
-              No pieces in this collection yet. Check back soon.
+              {!reveal.showProducts && !reveal.isLive
+                ? "This drop is locked until the countdown ends."
+                : "No pieces in this collection yet. Check back soon."}
             </p>
           ) : (
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-              {collection.products.map((product, index) => (
-                <ProductCard key={product.id} product={product} priority={index < 3} />
+              {visibleProducts.map((product, index) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  priority={index < 3}
+                  previewOnly={!reveal.allowPurchase}
+                />
               ))}
             </div>
           )}

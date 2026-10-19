@@ -2,7 +2,10 @@ import type { CollectionRow, ProductRow } from "@/lib/shop/types";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 
 export type ProductWithCollection = ProductRow & {
-  collection: Pick<CollectionRow, "id" | "name" | "slug" | "status"> | null;
+  collection: Pick<
+    CollectionRow,
+    "id" | "name" | "slug" | "status" | "reveal_at" | "show_items_during_countdown"
+  > | null;
 };
 
 export function parseProductSizes(raw: unknown): string[] {
@@ -52,7 +55,9 @@ export async function getProductBySlug(slug: string): Promise<ProductWithCollect
         id,
         name,
         slug,
-        status
+        status,
+        reveal_at,
+        show_items_during_countdown
       )
     `
     )

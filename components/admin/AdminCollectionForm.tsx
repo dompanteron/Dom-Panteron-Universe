@@ -145,7 +145,9 @@ export default function AdminCollectionForm({
           onChange={(e) => setShowDuringCountdown(e.target.checked)}
           className="h-4 w-4"
         />
-        <span className="text-sm text-zinc-400">Show product images during countdown</span>
+        <span className="text-sm text-zinc-400">
+          Show product images during countdown (checkout stays locked until reveal time)
+        </span>
       </label>
       <div className="md:col-span-2">
         {error ? <p className="mb-4 text-sm text-red-400">{error}</p> : null}

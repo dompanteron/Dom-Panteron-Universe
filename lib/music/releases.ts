@@ -15,3 +15,19 @@ export async function getActiveMusicReleases(): Promise<MusicReleaseRow[]> {
 
   return (data ?? []) as MusicReleaseRow[];
 }
+
+export async function getMusicReleaseBySlug(slug: string): Promise<MusicReleaseRow | null> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("music_releases")
+    .select("*")
+    .eq("slug", slug)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return data as MusicReleaseRow;
+}

@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import ReleaseListenCard from "@/components/music/ReleaseListenCard";
+import { parseListenEmbed } from "@/lib/music/parse-listen-embed";
 import { getActiveMusicReleases } from "@/lib/music/releases";
+import { buildShareMetadata } from "@/lib/site-metadata";
 
-export const metadata: Metadata = {
-  title: "Music | Dom Panteron Universe",
-  description:
-    "Sound that raises the frequency — releases and listening space from Dom Panteron."
-};
+export const metadata: Metadata = buildShareMetadata({
+  title: "Music",
+  description: "Sound that raises the frequency — releases and listening from Dom Panteron.",
+  path: "/music"
+});
 
 export default async function MusicPage() {
   let releases: Awaited<ReturnType<typeof getActiveMusicReleases>> = [];
@@ -17,6 +20,10 @@ export default async function MusicPage() {
   } catch (error) {
     loadError = error instanceof Error ? error.message : "Could not load releases.";
   }
+
+  const listenReleases = releases.filter(
+    (release) => release.listen_url && parseListenEmbed(release.listen_url)
+  );
 
   return (
     <main className="text-white">
@@ -35,8 +42,8 @@ export default async function MusicPage() {
             Sound that raises the signal
           </h1>
           <p className="home-rise home-rise-delay-2 mt-6 max-w-2xl text-lg text-zinc-300 sm:text-xl">
-            Releases made to move body, mind, and field. The listening space is opening — first
-            tracks land here.
+            Releases made to move body, mind, and field. Press play below or open your streaming app
+            of choice.
           </p>
           <div className="home-rise home-rise-delay-3 mt-8">
             <Link
@@ -48,6 +55,23 @@ export default async function MusicPage() {
           </div>
         </div>
       </section>
+
+      {listenReleases.length > 0 ? (
+        <section className="border-t border-white/10 bg-panteron-deep">
+          <div className="mx-auto max-w-6xl px-6 py-20 md:py-28">
+            <p className="text-xs uppercase tracking-[0.3em] text-panteron-violet">Listen</p>
+            <h2 className="font-display mt-4 max-w-3xl text-3xl sm:text-4xl">Press play</h2>
+            <p className="mt-4 max-w-2xl text-zinc-400">
+              Spotify, YouTube, and SoundCloud links from admin play inline here.
+            </p>
+            <div className="mt-12 grid gap-8 lg:grid-cols-2">
+              {listenReleases.map((release) => (
+                <ReleaseListenCard key={release.id} release={release} />
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <section className="border-t border-white/10 bg-panteron-black">
         <div className="mx-auto max-w-6xl px-6 py-20 md:py-28">
@@ -76,7 +100,14 @@ export default async function MusicPage() {
                     <div className="hidden h-16 w-16 border border-white/10 bg-panteron-deep sm:block" />
                   )}
                   <div>
-                    <h3 className="font-display text-2xl text-white">{release.title}</h3>
+                    <h3 className="font-display text-2xl text-white">
+                      <Link
+                        href={`/music/${release.slug}`}
+                        className="transition hover:text-panteron-violet"
+                      >
+                        {release.title}
+                      </Link>
+                    </h3>
                     {release.listen_url ? (
                       <a
                         href={release.listen_url}
@@ -98,32 +129,34 @@ export default async function MusicPage() {
         </div>
       </section>
 
-      <section className="border-t border-white/10 bg-panteron-deep">
-        <div className="mx-auto max-w-6xl px-6 py-20 md:py-28">
-          <p className="text-xs uppercase tracking-[0.3em] text-panteron-violet">Listen</p>
-          <h2 className="font-display mt-4 max-w-3xl text-3xl sm:text-4xl">
-            More embeds and previews soon
-          </h2>
-          <p className="mt-6 max-w-2xl text-lg text-zinc-300">
-            Add streaming links in admin for each release. Join for early listening access when drops
-            go live.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-4">
-            <Link
-              href="/join"
-              className="bg-white px-6 py-3 text-sm font-medium text-panteron-black transition hover:bg-panteron-violet hover:text-white"
-            >
-              Join the universe
-            </Link>
-            <Link
-              href="/collections"
-              className="border border-white/25 px-6 py-3 text-sm font-medium text-white transition hover:border-panteron-violet hover:text-panteron-violet"
-            >
-              Explore collections
-            </Link>
+      {listenReleases.length === 0 ? (
+        <section className="border-t border-white/10 bg-panteron-deep">
+          <div className="mx-auto max-w-6xl px-6 py-20 md:py-28">
+            <p className="text-xs uppercase tracking-[0.3em] text-panteron-violet">Listen</p>
+            <h2 className="font-display mt-4 max-w-3xl text-3xl sm:text-4xl">
+              Add a streaming link in admin
+            </h2>
+            <p className="mt-6 max-w-2xl text-lg text-zinc-300">
+              Paste a Spotify, YouTube, or SoundCloud URL on a release — it will embed here
+              automatically.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-4">
+              <Link
+                href="/join"
+                className="bg-white px-6 py-3 text-sm font-medium text-panteron-black transition hover:bg-panteron-violet hover:text-white"
+              >
+                Join the universe
+              </Link>
+              <Link
+                href="/collections"
+                className="border border-white/25 px-6 py-3 text-sm font-medium text-white transition hover:border-panteron-violet hover:text-panteron-violet"
+              >
+                Explore collections
+              </Link>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
     </main>
   );
 }

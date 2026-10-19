@@ -42,7 +42,7 @@ Use `.env.local` for local secrets and Vercel Project Environment Variables for 
 4. Deploy. Each push to `main` triggers a new **Production** deploy; other branches/PRs get **Preview** URLs.
 5. **Supabase Auth** — [Authentication → URL configuration](https://supabase.com/dashboard/project/jrdoyghmqyzfprldnvky/auth/url-configuration):
    - **Site URL:** your main Vercel URL
-   - **Redirect URLs:** add `https://<your-project>.vercel.app/auth/callback` and `http://localhost:3000/auth/callback`
+   - **Redirect URLs:** add `https://<your-project>.vercel.app/auth/callback` and `http://localhost:3000/auth/callback` (password reset emails use the same callback → `/join/reset`)
 
 ## Custom domain (optional)
 
@@ -110,6 +110,14 @@ If **SumUp and PayPal** are both configured, the buyer chooses **Card (SumUp)** 
 Apply migration `20251017230000_paypal_order_ids.sql` (`npx supabase db push`).
 
 **Sandbox:** create app at [PayPal Developer](https://developer.paypal.com/) and use sandbox business + personal test accounts.
+
+**Webhook (recommended):** In PayPal Developer → your app → **Webhooks**, add:
+
+`https://YOUR-SITE-URL/api/webhooks/paypal`
+
+Subscribe at least to **Checkout order approved** and **Payment capture completed**. Copy the **Webhook ID** into `PAYPAL_WEBHOOK_ID` on Vercel. If the buyer closes the browser before the return page runs, PayPal can still trigger capture and mark shop orders / raffle entries paid.
+
+Local dev without `PAYPAL_WEBHOOK_ID` skips signature verification (production should always set it).
 
 ## Database migrations
 

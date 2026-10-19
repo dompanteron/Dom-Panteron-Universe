@@ -35,9 +35,19 @@ export default async function SiteFooter() {
       </div>
 
       <div className="border-t border-white/5">
-        <p className="mx-auto max-w-6xl px-6 py-4 text-xs text-zinc-500">
-          © {new Date().getFullYear()} Dom Panteron Universe
-        </p>
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-4">
+          <p className="text-xs text-zinc-500">
+            © {new Date().getFullYear()} Dom Panteron Universe
+          </p>
+          <div className="flex gap-4 text-xs">
+            <Link href="/privacy" className="text-zinc-500 transition hover:text-panteron-violet">
+              Privacy
+            </Link>
+            <Link href="/terms" className="text-zinc-500 transition hover:text-panteron-violet">
+              Terms
+            </Link>
+          </div>
+        </div>
       </div>
     </footer>
   );

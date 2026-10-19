@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import CollectionBlock from "@/components/shop/CollectionBlock";
 import { getActiveCollectionsWithProducts } from "@/lib/shop/collections";
+import { visibleProductsForCollection } from "@/lib/shop/collection-reveal";
 
 export const metadata: Metadata = {
   title: "Collections | Dom Panteron Universe",
@@ -61,16 +62,22 @@ export default async function CollectionsPage() {
             </div>
           ) : (
             <div className="space-y-0">
-              {collections.map((collection, index) => (
-                <CollectionBlock
-                  key={collection.id}
-                  collection={collection}
-                  products={collection.products}
-                  reverse={index % 2 === 1}
-                  isFirst={index === 0}
-                  isLast={index === collections.length - 1}
-                />
-              ))}
+              {collections.map((collection, index) => {
+                const { products: visibleProducts } = visibleProductsForCollection(
+                  collection,
+                  collection.products
+                );
+                return (
+                  <CollectionBlock
+                    key={collection.id}
+                    collection={collection}
+                    products={visibleProducts}
+                    reverse={index % 2 === 1}
+                    isFirst={index === 0}
+                    isLast={index === collections.length - 1}
+                  />
+                );
+              })}
             </div>
           )}
         </div>

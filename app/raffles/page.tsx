@@ -11,22 +11,37 @@ export const metadata: Metadata = {
 
 export default async function RafflesPage() {
   let raffles: PublicRaffle[] = [];
+  let pastRaffles: PublicRaffle[] = [];
   let loadError: string | null = null;
 
   try {
     const supabase = await createServerClient();
-    const { data, error } = await supabase
-      .from("raffles")
-      .select(
-        "id, title, subtitle, description, ticket_price, max_entries, total_entries, draw_date, status"
-      )
-      .eq("status", "active")
-      .order("draw_date", { ascending: true });
+    const [activeResult, endedResult] = await Promise.all([
+      supabase
+        .from("raffles")
+        .select(
+          "id, title, subtitle, description, ticket_price, max_entries, total_entries, draw_date, status"
+        )
+        .eq("status", "active")
+        .order("draw_date", { ascending: true }),
+      supabase
+        .from("raffles")
+        .select(
+          "id, title, subtitle, description, ticket_price, max_entries, total_entries, draw_date, status, winner_number, winner_initials, winner_display_name"
+        )
+        .eq("status", "ended")
+        .order("draw_date", { ascending: false })
+        .limit(12)
+    ]);
 
-    if (error) {
-      loadError = error.message;
+    if (activeResult.error) {
+      loadError = activeResult.error.message;
     } else {
-      raffles = (data ?? []) as PublicRaffle[];
+      raffles = (activeResult.data ?? []) as PublicRaffle[];
+    }
+
+    if (!endedResult.error) {
+      pastRaffles = (endedResult.data ?? []) as PublicRaffle[];
     }
   } catch (error) {
     loadError =
@@ -124,6 +139,52 @@ export default async function RafflesPage() {
               ))}
             </ul>
           )}
+
+          {pastRaffles.length > 0 ? (
+            <div className="mt-24">
+              <p className="text-xs uppercase tracking-[0.3em] text-panteron-violet">Past draws</p>
+              <h2 className="font-display mt-4 text-3xl sm:text-4xl">Winners in the circle</h2>
+              <ul className="mt-12 divide-y divide-white/10 border-y border-white/10">
+                {pastRaffles.map((raffle) => (
+                  <li
+                    key={raffle.id}
+                    className="grid gap-4 py-10 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] md:items-end"
+                  >
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">Ended</p>
+                      <h2 className="font-display mt-3 text-3xl">
+                        <Link
+                          href={`/raffles/${raffle.id}`}
+                          className="transition hover:text-panteron-violet"
+                        >
+                          {raffle.title}
+                        </Link>
+                      </h2>
+                      {raffle.winner_display_name ? (
+                        <p className="mt-2 text-lg text-panteron-violet">
+                          Winner · {raffle.winner_display_name}
+                          {raffle.winner_number != null ? (
+                            <span className="text-zinc-400"> · ticket #{raffle.winner_number}</span>
+                          ) : null}
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="md:text-right">
+                      <p className="text-sm text-zinc-400">
+                        Draw {formatRaffleDrawDate(raffle.draw_date)}
+                      </p>
+                      <Link
+                        href={`/raffles/${raffle.id}`}
+                        className="mt-5 inline-block text-sm text-zinc-300 transition hover:text-panteron-violet"
+                      >
+                        View results →
+                      </Link>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </div>
       </section>
     </main>

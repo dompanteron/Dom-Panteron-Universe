@@ -11,6 +11,7 @@ export type RaffleFormValues = {
   description: string | null;
   ticket_price: number | string;
   max_entries: number | string;
+  ticket_limit_per_user?: number | string | null;
   draw_date: string;
   status: string;
 };
@@ -23,6 +24,9 @@ export default function AdminRaffleForm({ raffle }: { raffle?: RaffleFormValues 
   const [description, setDescription] = useState(raffle?.description ?? "");
   const [ticketPrice, setTicketPrice] = useState(String(raffle?.ticket_price ?? "5"));
   const [maxEntries, setMaxEntries] = useState(String(raffle?.max_entries ?? "100"));
+  const [ticketLimitPerUser, setTicketLimitPerUser] = useState(
+    raffle?.ticket_limit_per_user != null ? String(raffle.ticket_limit_per_user) : ""
+  );
   const [drawDate, setDrawDate] = useState(
     raffle?.draw_date ? toDatetimeLocal(raffle.draw_date) : ""
   );
@@ -49,6 +53,7 @@ export default function AdminRaffleForm({ raffle }: { raffle?: RaffleFormValues 
             description,
             ticket_price: ticketPrice,
             max_entries: maxEntries,
+            ticket_limit_per_user: ticketLimitPerUser.trim() ? ticketLimitPerUser : null,
             draw_date: drawDate,
             status
           })
@@ -67,6 +72,7 @@ export default function AdminRaffleForm({ raffle }: { raffle?: RaffleFormValues 
         setDescription("");
         setTicketPrice("5");
         setMaxEntries("100");
+        setTicketLimitPerUser("");
         setDrawDate("");
         setStatus("draft");
       }
@@ -151,6 +157,24 @@ export default function AdminRaffleForm({ raffle }: { raffle?: RaffleFormValues 
           onChange={(event) => setMaxEntries(event.target.value)}
           className={fieldClass}
         />
+      </label>
+
+      <label className="block">
+        <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">
+          Max entries per member
+        </span>
+        <input
+          type="number"
+          min="1"
+          step="1"
+          value={ticketLimitPerUser}
+          onChange={(event) => setTicketLimitPerUser(event.target.value)}
+          className={fieldClass}
+          placeholder="No limit"
+        />
+        <span className="mt-2 block text-xs text-zinc-500">
+          Optional cap on how many tickets one member can hold in this draw.
+        </span>
       </label>
 
       <label className="block">

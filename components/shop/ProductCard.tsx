@@ -6,10 +6,12 @@ import type { ProductRow } from "@/lib/shop/types";
 
 export default function ProductCard({
   product,
-  priority
+  priority,
+  previewOnly
 }: {
   product: ProductRow;
   priority?: boolean;
+  previewOnly?: boolean;
 }) {
   const mainSrc = productImageUrl(product);
   const hoverSrc =
@@ -54,6 +56,13 @@ export default function ProductCard({
             </span>
           </div>
         ) : null}
+        {previewOnly && !isSold ? (
+          <div className="pointer-events-none absolute left-4 top-4 z-20">
+            <span className="bg-panteron-black/80 px-3 py-1 text-xs uppercase tracking-[0.2em] text-panteron-violet">
+              Drops soon
+            </span>
+          </div>
+        ) : null}
       </div>
       <div className="p-6">
         <h2 className="font-display text-xl text-white">{product.title}</h2>
@@ -72,9 +81,13 @@ export default function ProductCard({
     </>
   );
 
-  if (isSold) {
+  if (isSold || previewOnly) {
     return (
-      <div className="overflow-hidden border border-white/10 bg-panteron-deep opacity-90">
+      <div
+        className={`overflow-hidden border border-white/10 bg-panteron-deep ${
+          isSold ? "opacity-90" : ""
+        }`}
+      >
         {cardInner}
       </div>
     );

@@ -15,6 +15,7 @@ type RaffleEnterPanelProps = {
   yourEntries: number;
   ticketLimitPerUser: number | null;
   isFull: boolean;
+  isEnded: boolean;
   signedIn: boolean;
   paymentsEnabled: boolean;
   paymentSumup: boolean;
@@ -28,6 +29,7 @@ export default function RaffleEnterPanel({
   yourEntries,
   ticketLimitPerUser,
   isFull,
+  isEnded,
   signedIn,
   paymentsEnabled,
   paymentSumup,
@@ -134,7 +136,9 @@ export default function RaffleEnterPanel({
         {localYourEntries === 1 ? "y" : "ies"} in this draw.
       </p>
 
-      {isFull ? (
+      {isEnded ? (
+        <p className="text-sm text-zinc-500">This draw has ended.</p>
+      ) : isFull ? (
         <p className="text-sm text-zinc-500">This draw is full.</p>
       ) : maxQuantity <= 0 ? (
         <p className="text-sm text-zinc-500">You reached your entry limit.</p>

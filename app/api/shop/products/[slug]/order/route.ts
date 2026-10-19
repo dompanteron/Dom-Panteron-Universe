@@ -8,6 +8,7 @@ import { resolvePaymentProvider } from "@/lib/payments/payment-providers";
 import { createSumUpHostedCheckout } from "@/lib/payments/sumup-api";
 import { getSumUpCredentials } from "@/lib/payments/sumup-config";
 import { getSiteUrl } from "@/lib/site-url";
+import { getCollectionRevealState } from "@/lib/shop/collection-reveal";
 import { parseProductSizes } from "@/lib/shop/products";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -58,7 +59,22 @@ export async function POST(
   const admin = createAdminClient();
   const { data: product, error: productError } = await admin
     .from("products")
-    .select("id, slug, title, price, currency, sizes, status")
+    .select(
+      `
+      id,
+      slug,
+      title,
+      price,
+      currency,
+      sizes,
+      status,
+      collections (
+        status,
+        reveal_at,
+        show_items_during_countdown
+      )
+    `
+    )
     .eq("slug", params.slug)
     .maybeSingle();
 
@@ -71,6 +87,23 @@ export async function POST(
       { ok: false, error: "This piece is not available to order." },
       { status: 400 }
     );
+  }
+
+  const collection = Array.isArray(product.collections)
+    ? product.collections[0]
+    : product.collections;
+
+  if (collection?.status === "active") {
+    const reveal = getCollectionRevealState({
+      reveal_at: collection.reveal_at ?? null,
+      show_items_during_countdown: Boolean(collection.show_items_during_countdown)
+    });
+    if (!reveal.allowPurchase) {
+      return NextResponse.json(
+        { ok: false, error: "This drop is not open for orders yet." },
+        { status: 400 }
+      );
+    }
   }
 
   const allowedSizes = parseProductSizes(product.sizes);
