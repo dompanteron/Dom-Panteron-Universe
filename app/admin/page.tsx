@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import AdminLaunchChecklist from "@/components/admin/AdminLaunchChecklist";
 import AdminOpsSnapshot from "@/components/admin/AdminOpsSnapshot";
 import { fetchAdminLineOpsSnapshot } from "@/lib/admin/line-ops-stats";
 import { requireAdmin } from "@/lib/members";
@@ -165,6 +166,7 @@ export default async function AdminHomePage() {
 
       {opsError ? <p className="mt-12 text-sm text-red-400">{opsError}</p> : null}
       {opsSnapshot ? <AdminOpsSnapshot snapshot={opsSnapshot} /> : null}
+      <AdminLaunchChecklist />
     </section>
   );
 }

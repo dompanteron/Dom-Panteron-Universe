@@ -36,7 +36,7 @@ Use `.env.local` for local secrets and Vercel Project Environment Variables for 
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
-   - `NEXT_PUBLIC_SITE_URL` — set to your Vercel URL after the first deploy (e.g. `https://dom-panteron-universe.vercel.app`), or leave unset to use Vercel’s `VERCEL_URL` for emails/links
+   - `NEXT_PUBLIC_SITE_URL` — your live URL (e.g. `https://dom-panteron-universe-p1.vercel.app`), **or leave unset** on Vercel so links/OG use `VERCEL_URL` automatically. Do **not** set `localhost` in Production.
    - `NEXT_PUBLIC_APP_URL` — same as `NEXT_PUBLIC_SITE_URL` for auth redirects
    - Optional: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `ADMIN_EMAIL`
 4. Deploy. Each push to `main` triggers a new **Production** deploy; other branches/PRs get **Preview** URLs.

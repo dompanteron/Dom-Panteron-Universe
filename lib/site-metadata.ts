@@ -44,6 +44,7 @@ export function buildShareMetadata(input: {
   const images = image ? [{ url: image, alt: input.title }] : undefined;
 
   return {
+    metadataBase: new URL(base),
     title: input.title,
     description,
     openGraph: {
