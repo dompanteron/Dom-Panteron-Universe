@@ -7,15 +7,23 @@ import {
 import { raffleLineLabel } from "@/lib/raffles/raffle-line-display";
 import type { ProductLineHubConfig } from "@/lib/shop/product-lines";
 
-export default async function LineRafflesSection({ config }: { config: ProductLineHubConfig }) {
+export type LineRaffleSectionConfig = Pick<ProductLineHubConfig, "navLabel"> & {
+  productLine: ProductLineHubConfig["key"] | string;
+};
+
+export default async function LineRafflesSection({
+  config
+}: {
+  config: LineRaffleSectionConfig;
+}) {
   let active: Awaited<ReturnType<typeof fetchActivePublicRaffles>> = [];
   let ended: Awaited<ReturnType<typeof fetchEndedPublicRaffles>> = [];
   let loadError: string | null = null;
 
   try {
     [active, ended] = await Promise.all([
-      fetchActivePublicRaffles({ productLine: config.key }),
-      fetchEndedPublicRaffles({ productLine: config.key, limit: 6 })
+      fetchActivePublicRaffles({ productLine: config.productLine }),
+      fetchEndedPublicRaffles({ productLine: config.productLine, limit: 6 })
     ]);
   } catch (error) {
     loadError = error instanceof Error ? error.message : "Could not load draws.";
@@ -37,7 +45,7 @@ export default async function LineRafflesSection({ config }: { config: ProductLi
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 md:py-20">
           <p className="text-xs uppercase tracking-[0.35em] text-panteron-violet">Draws</p>
           <h2 className="font-display mt-4 text-3xl sm:text-4xl">
-            {raffleLineLabel(config.key)} raffles
+            {raffleLineLabel(config.productLine)} raffles
           </h2>
           <p className="mt-4 max-w-xl text-zinc-400">
             No draws for this line yet. Join the universe — when a {config.navLabel} raffle goes

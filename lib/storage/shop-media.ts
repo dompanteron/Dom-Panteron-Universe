@@ -28,7 +28,7 @@ export function validateShopImageFile(file: File) {
   return { ok: true as const, ext: EXT_BY_MIME[file.type] ?? "jpg" };
 }
 
-export type ShopMediaFolder = "collections" | "products" | "music";
+export type ShopMediaFolder = "collections" | "products" | "music" | "realms";
 
 export function buildShopMediaPath(folder: ShopMediaFolder, ext: string) {
   const stamp = Date.now();

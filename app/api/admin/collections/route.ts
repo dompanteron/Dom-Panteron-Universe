@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { ensureCurrentMember } from "@/lib/members";
 import { parseCollectionCheckoutFromBody } from "@/lib/shop/checkout-rules";
 import { parseProductLineInput } from "@/lib/shop/product-lines";
+import { resolveCollectionRealmFields } from "@/lib/shop/resolve-collection-realm";
 import { revalidateShopPaths } from "@/lib/shop/revalidate-shop-paths";
 import { slugify } from "@/lib/shop/slug";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -25,14 +26,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Invalid status." }, { status: 400 });
   }
 
-  const productLine = parseProductLineInput(body.product_line);
-  if (body.product_line !== undefined && body.product_line !== null && String(body.product_line).trim() && !productLine) {
+  const productLineOnly = parseProductLineInput(body.product_line);
+  if (
+    body.product_line !== undefined &&
+    body.product_line !== null &&
+    String(body.product_line).trim() &&
+    !productLineOnly
+  ) {
     return NextResponse.json({ ok: false, error: "Invalid product line." }, { status: 400 });
   }
 
   const checkout = parseCollectionCheckoutFromBody(body);
 
   const admin = createAdminClient();
+  const { realm_id, product_line } = await resolveCollectionRealmFields(admin, body);
+
   const { data, error } = await admin
     .from("collections")
     .insert({
@@ -43,7 +51,8 @@ export async function POST(request: Request) {
       cover_image_url: String(body.cover_image_url ?? "").trim() || null,
       display_order: Number(body.display_order ?? 0),
       status,
-      product_line: productLine,
+      realm_id,
+      product_line,
       ...checkout,
       reveal_at: body.reveal_at ? new Date(String(body.reveal_at)).toISOString() : null,
       show_items_during_countdown: Boolean(body.show_items_during_countdown)

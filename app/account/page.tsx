@@ -50,7 +50,7 @@ export default async function AccountPage() {
 
           <div className="mt-10 flex flex-wrap gap-4">
             <Link
-              href="/collections"
+              href="/shop"
               className="bg-panteron-purple px-6 py-3 text-sm font-medium text-white transition hover:bg-panteron-violet"
             >
               Shop collections
@@ -141,7 +141,7 @@ export default async function AccountPage() {
             <div className="mt-10">
               <p className="text-zinc-400">No shop orders yet.</p>
               <Link
-                href="/collections"
+                href="/shop"
                 className="mt-6 inline-block border border-white/25 px-5 py-2.5 text-sm text-white transition hover:border-panteron-violet hover:text-panteron-violet"
               >
                 Explore collections →

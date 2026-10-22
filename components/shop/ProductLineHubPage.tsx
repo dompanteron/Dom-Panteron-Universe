@@ -153,7 +153,7 @@ export default async function ProductLineHubPage({
         </div>
       </section>
 
-      <LineRafflesSection config={config} />
+      <LineRafflesSection config={{ productLine: config.key, navLabel: config.navLabel }} />
     </main>
   );
 }

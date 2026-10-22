@@ -1,6 +1,6 @@
 export const mainNav = [
   { href: "/", label: "Home" },
-  { href: "/collections", label: "Shop", shopMenu: true as const },
+  { href: "/shop", label: "Shop", shopMenu: true as const },
   { href: "/music", label: "Music" },
   { href: "/raffles", label: "Raffles" },
   { href: "/about", label: "About" },
@@ -10,6 +10,7 @@ export const mainNav = [
 export const adminNav = [
   { href: "/admin", label: "Admin all" },
   { href: "/admin/members", label: "Members" },
+  { href: "/admin/realms", label: "Realms" },
   { href: "/admin/collections", label: "Collections" },
   { href: "/admin/products", label: "Products" },
   { href: "/admin/orders", label: "Orders" },

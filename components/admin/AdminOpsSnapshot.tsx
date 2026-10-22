@@ -2,19 +2,20 @@ import Link from "next/link";
 import type { AdminLineOpsSnapshot } from "@/lib/admin/line-ops-stats";
 import { adminFilterHref } from "@/lib/admin/admin-list-filters";
 import { LOW_STOCK_THRESHOLD } from "@/lib/shop/low-stock";
+import { realmShopPath } from "@/lib/shop/realm-ui";
 
 export default function AdminOpsSnapshot({ snapshot }: { snapshot: AdminLineOpsSnapshot }) {
   return (
     <div className="mt-16 space-y-12">
       <div>
         <p className="text-xs uppercase tracking-[0.35em] text-panteron-violet">Operations</p>
-        <h2 className="font-display mt-3 text-3xl">By product line</h2>
+        <h2 className="font-display mt-3 text-3xl">By realm</h2>
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-          Quick pulse for champagne, HOME, water, and fashion — without leaving the control room.
+          Pulse across all shop realms — orders, inventory, and draws in one view.
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {snapshot.lines.map((row) => (
           <div key={row.line} className="border border-white/10 p-5">
             <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">{row.label}</p>
@@ -30,6 +31,12 @@ export default function AdminOpsSnapshot({ snapshot }: { snapshot: AdminLineOpsS
               ) : null}
             </ul>
             <div className="mt-4 flex flex-wrap gap-3 text-xs">
+              <Link
+                href={realmShopPath(row.line)}
+                className="text-zinc-400 hover:text-white"
+              >
+                Public hub →
+              </Link>
               <Link
                 href={adminFilterHref("/admin/orders", { line: row.line, status: "pending" })}
                 className="text-panteron-violet hover:text-white"

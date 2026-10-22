@@ -125,7 +125,9 @@ export function revalidateRafflePaths() {
     "/admin/raffles",
     "/raffles",
     "/admin",
-    ...productLineHubs.map((hub) => hub.path)
+    ...productLineHubs.map((hub) => hub.path),
+    "/shop",
+    ...productLineHubs.map((hub) => `/shop/${hub.key}`)
   ] as const;
 }
 

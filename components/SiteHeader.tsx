@@ -7,8 +7,9 @@ import AdminMenu from "@/components/AdminMenu";
 import SiteHeaderShopNav from "@/components/SiteHeaderShopNav";
 import { useCurrentMember } from "@/components/useCurrentMember";
 import { mainNav } from "@/lib/navigation";
+import type { RealmRow } from "@/lib/shop/types";
 
-export default function SiteHeader() {
+export default function SiteHeader({ shopRealms = [] }: { shopRealms?: RealmRow[] }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const { member } = useCurrentMember();
@@ -60,7 +61,9 @@ export default function SiteHeader() {
             }
 
             if ("shopMenu" in item && item.shopMenu) {
-              return <SiteHeaderShopNav key={item.href} variant="desktop" />;
+              return (
+                <SiteHeaderShopNav key={item.href} variant="desktop" shopRealms={shopRealms} />
+              );
             }
 
             return (
@@ -130,7 +133,9 @@ export default function SiteHeader() {
             }
 
             if ("shopMenu" in item && item.shopMenu) {
-              return <SiteHeaderShopNav key={item.href} variant="mobile" />;
+              return (
+                <SiteHeaderShopNav key={item.href} variant="mobile" shopRealms={shopRealms} />
+              );
             }
 
             return (

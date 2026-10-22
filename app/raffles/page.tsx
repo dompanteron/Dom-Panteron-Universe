@@ -5,7 +5,8 @@ import {
   fetchActivePublicRaffles,
   fetchEndedPublicRaffles
 } from "@/lib/raffles/fetch-public-raffles";
-import { productLineHubs } from "@/lib/shop/product-lines";
+import { getActiveRealms } from "@/lib/shop/realms";
+import { realmShopPath } from "@/lib/shop/realm-ui";
 
 export const metadata: Metadata = {
   title: "Raffles | Dom Panteron Universe",
@@ -15,12 +16,14 @@ export const metadata: Metadata = {
 export default async function RafflesPage() {
   let raffles: Awaited<ReturnType<typeof fetchActivePublicRaffles>> = [];
   let pastRaffles: Awaited<ReturnType<typeof fetchEndedPublicRaffles>> = [];
+  let realms: Awaited<ReturnType<typeof getActiveRealms>> = [];
   let loadError: string | null = null;
 
   try {
-    [raffles, pastRaffles] = await Promise.all([
+    [raffles, pastRaffles, realms] = await Promise.all([
       fetchActivePublicRaffles(),
-      fetchEndedPublicRaffles({ limit: 12 })
+      fetchEndedPublicRaffles({ limit: 12 }),
+      getActiveRealms()
     ]);
   } catch (error) {
     loadError = error instanceof Error ? error.message : "Could not load raffles.";
@@ -43,17 +46,17 @@ export default async function RafflesPage() {
             Step into the circle
           </h1>
           <p className="home-rise home-rise-delay-2 mt-6 max-w-2xl text-lg text-zinc-300 sm:text-xl">
-            Universe-wide draws plus line-specific drops for champagne, HOME, and water. Join
-            first, then claim your place when a raffle goes live.
+            Universe-wide draws plus realm-specific circles. Join first, then claim your place when
+            a raffle goes live.
           </p>
           <div className="home-rise home-rise-delay-3 mt-8 flex flex-wrap gap-3">
-            {productLineHubs.map((hub) => (
+            {realms.map((realm) => (
               <Link
-                key={hub.path}
-                href={`${hub.path}#draws`}
+                key={realm.id}
+                href={`${realmShopPath(realm.slug)}#draws`}
                 className="border border-white/20 px-4 py-2 text-sm transition hover:border-panteron-violet hover:text-panteron-violet"
               >
-                {hub.navLabel} draws
+                {realm.name} draws
               </Link>
             ))}
           </div>

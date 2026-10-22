@@ -3,7 +3,7 @@ import Link from "next/link";
 import CollectionBlock from "@/components/shop/CollectionBlock";
 import { getActiveCollectionsWithProducts } from "@/lib/shop/collections";
 import { visibleProductsForCollection } from "@/lib/shop/collection-reveal";
-import { productLineHubs } from "@/lib/shop/product-lines";
+import { getActiveRealms, realmShopPath } from "@/lib/shop/realms";
 
 export const metadata: Metadata = {
   title: "Collections | Dom Panteron Universe",
@@ -13,10 +13,14 @@ export const metadata: Metadata = {
 
 export default async function CollectionsPage() {
   let collections: Awaited<ReturnType<typeof getActiveCollectionsWithProducts>> = [];
+  let realms: Awaited<ReturnType<typeof getActiveRealms>> = [];
   let loadError: string | null = null;
 
   try {
-    collections = await getActiveCollectionsWithProducts();
+    [collections, realms] = await Promise.all([
+      getActiveCollectionsWithProducts(),
+      getActiveRealms()
+    ]);
   } catch (error) {
     loadError = error instanceof Error ? error.message : "Could not load collections.";
   }
@@ -37,17 +41,23 @@ export default async function CollectionsPage() {
             Collections
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-xl text-zinc-300">
-            Fashion, champagne, HOME, and water — one checkout. Explore the drop, pick your
+            Every drop lives in a realm — one checkout across the universe. Explore, pick your
             size or variant, order the piece.
           </p>
-          <div className="mx-auto mt-8 flex max-w-2xl flex-wrap justify-center gap-3">
-            {productLineHubs.map((hub) => (
+          <div className="mx-auto mt-8 flex max-w-3xl flex-wrap justify-center gap-3">
+            <Link
+              href="/shop"
+              className="border border-white/20 px-4 py-2 text-sm transition hover:border-panteron-violet hover:text-panteron-violet"
+            >
+              All realms
+            </Link>
+            {realms.map((realm) => (
               <Link
-                key={hub.path}
-                href={hub.path}
+                key={realm.id}
+                href={realmShopPath(realm.slug)}
                 className="border border-white/20 px-4 py-2 text-sm transition hover:border-panteron-violet hover:text-panteron-violet"
               >
-                {hub.navLabel}
+                {realm.name}
               </Link>
             ))}
           </div>

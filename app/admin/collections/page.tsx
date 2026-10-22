@@ -13,12 +13,17 @@ export const metadata: Metadata = {
 export default async function AdminCollectionsPage() {
   await requireAdmin();
   const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("collections")
-    .select("id, name, slug, status, display_order, product_line")
-    .order("display_order", { ascending: true });
+  const [collectionsResult, realmsResult] = await Promise.all([
+    admin
+      .from("collections")
+      .select("id, name, slug, status, display_order, product_line, realm_id")
+      .order("display_order", { ascending: true }),
+    admin.from("realms").select("id, slug, name").order("display_order", { ascending: true })
+  ]);
 
+  const { data, error } = collectionsResult;
   const collections = data ?? [];
+  const realms = realmsResult.data ?? [];
 
   return (
     <section className="mx-auto max-w-6xl px-6 py-16">
@@ -41,7 +46,7 @@ export default async function AdminCollectionsPage() {
       <div className="mt-12 border border-white/10 p-6 sm:p-8">
         <h2 className="font-display text-2xl">New collection</h2>
         <div className="mt-6">
-          <AdminCollectionForm />
+          <AdminCollectionForm realms={realms} />
         </div>
       </div>
 
@@ -56,7 +61,7 @@ export default async function AdminCollectionsPage() {
               <tr className="text-xs uppercase tracking-[0.2em] text-zinc-500">
                 <th className="py-4 pr-4 font-normal">Name</th>
                 <th className="py-4 pr-4 font-normal">Slug</th>
-                <th className="py-4 pr-4 font-normal">Line</th>
+                <th className="py-4 pr-4 font-normal">Realm</th>
                 <th className="py-4 pr-4 font-normal">Status</th>
                 <th className="py-4 pr-4 font-normal">Order</th>
                 <th className="py-4 font-normal"> </th>

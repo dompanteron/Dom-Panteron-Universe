@@ -7,7 +7,13 @@ import { useEffect, useState } from "react";
 const SUMUP_STORAGE_KEY = "dom_panteron_sumup_checkout_id";
 const PAYPAL_STORAGE_KEY = "dom_panteron_paypal_order_id";
 
-export default function ShopOrderComplete({ orderId }: { orderId: string }) {
+export default function ShopOrderComplete({
+  orderId,
+  continueShoppingHref = "/shop"
+}: {
+  orderId: string;
+  continueShoppingHref?: string;
+}) {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<"loading" | "paid" | "pending" | "failed">("loading");
   const [message, setMessage] = useState<string | null>(null);
@@ -152,6 +158,12 @@ export default function ShopOrderComplete({ orderId }: { orderId: string }) {
           >
             View account
           </Link>
+          <Link
+            href={continueShoppingHref}
+            className="mt-4 inline-block text-sm text-zinc-400 hover:text-panteron-violet"
+          >
+            Continue shopping →
+          </Link>
         </>
       ) : null}
 
@@ -159,8 +171,11 @@ export default function ShopOrderComplete({ orderId }: { orderId: string }) {
         <>
           <p className="font-display text-2xl text-red-400">Payment failed</p>
           <p className="mt-3 text-sm text-zinc-400">{message ?? "Try again from the product page."}</p>
-          <Link href="/collections" className="mt-8 inline-block text-sm text-panteron-violet hover:text-white">
-            Back to collections →
+          <Link
+            href={continueShoppingHref}
+            className="mt-8 inline-block text-sm text-panteron-violet hover:text-white"
+          >
+            Back to shop →
           </Link>
         </>
       ) : null}

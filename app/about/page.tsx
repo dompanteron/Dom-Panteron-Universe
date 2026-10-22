@@ -96,9 +96,9 @@ export default function AboutPage() {
             This is only the beginning
           </h2>
           <p className="max-w-xl text-lg text-zinc-300">
-            The universe is still being built. Join early, explore the clothing
-            and music paths, and grow with Dom Panteron as the next chapters
-            arrive.
+            The universe is still being built. Join early, walk through the shop
+            realms, listen to the music, and grow with Dom Panteron as the next
+            chapters arrive.
           </p>
           <div className="flex flex-wrap gap-4">
             <Link
@@ -108,10 +108,16 @@ export default function AboutPage() {
               Join the universe
             </Link>
             <Link
-              href="/collections"
+              href="/shop"
               className="border border-white/25 px-6 py-3 text-sm font-medium text-white transition hover:border-panteron-violet hover:text-panteron-violet"
             >
-              Explore collections
+              Enter the shop
+            </Link>
+            <Link
+              href="/music"
+              className="border border-white/15 px-6 py-3 text-sm font-medium text-zinc-300 transition hover:border-panteron-violet hover:text-panteron-violet"
+            >
+              Listen
             </Link>
           </div>
         </div>

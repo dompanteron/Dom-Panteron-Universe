@@ -1,6 +1,6 @@
 import { Manrope, Syne } from "next/font/google";
 import SiteFooter from "@/components/SiteFooter";
-import SiteHeader from "@/components/SiteHeader";
+import SiteHeaderWithRealms from "@/components/SiteHeaderWithRealms";
 import { rootSiteMetadata } from "@/lib/site-metadata";
 import "./globals.css";
 
@@ -25,7 +25,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${manrope.variable} ${syne.variable} font-sans antialiased`}>
         <div className="flex min-h-screen flex-col">
-          <SiteHeader />
+          <SiteHeaderWithRealms />
           <div className="flex-1">{children}</div>
           <SiteFooter />
         </div>

@@ -29,7 +29,8 @@ export default function ProductPurchasePanel({
   paymentPaypal,
   purchaseLocked,
   checkoutRules: checkoutRulesInput,
-  stockQuantity
+  stockQuantity,
+  browseMoreHref = "/shop"
 }: {
   productSlug: string;
   price: number;
@@ -45,6 +46,7 @@ export default function ProductPurchasePanel({
   defaultEmail?: string | null;
   paymentSumup: boolean;
   paymentPaypal: boolean;
+  browseMoreHref?: string;
 }) {
   const checkoutRules = collectionCheckoutRules(checkoutRulesInput);
   const maxQuantity = effectiveMaxQuantity(checkoutRules, stockQuantity);
@@ -137,10 +139,10 @@ export default function ProductPurchasePanel({
           This collection is still on countdown. Checkout opens when the drop goes live.
         </p>
         <Link
-          href="/collections"
+          href={browseMoreHref}
           className="mt-6 inline-block text-sm text-zinc-300 transition hover:text-panteron-violet"
         >
-          Back to collections →
+          Back to shop →
         </Link>
       </div>
     );
@@ -152,10 +154,10 @@ export default function ProductPurchasePanel({
         <p className="font-display text-2xl text-panteron-violet">Sold out</p>
         <p className="mt-2 text-sm text-zinc-400">This piece has left the circle.</p>
         <Link
-          href="/collections"
+          href={browseMoreHref}
           className="mt-6 inline-block text-sm text-zinc-300 transition hover:text-panteron-violet"
         >
-          Browse other collections →
+          Browse the shop →
         </Link>
       </div>
     );

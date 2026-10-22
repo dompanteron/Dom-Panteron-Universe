@@ -9,7 +9,7 @@ const endedExtraFields =
   ", winner_number, winner_initials, winner_display_name";
 
 export async function fetchActivePublicRaffles(options?: {
-  productLine?: ProductLineHubKey | ProductLine | null;
+  productLine?: ProductLineHubKey | ProductLine | string | null;
 }): Promise<PublicRaffle[]> {
   const supabase = await createServerClient();
   let query = supabase
@@ -36,7 +36,7 @@ export async function fetchActivePublicRaffles(options?: {
 
 export async function fetchEndedPublicRaffles(options?: {
   limit?: number;
-  productLine?: ProductLineHubKey | ProductLine | null;
+  productLine?: ProductLineHubKey | ProductLine | string | null;
 }): Promise<PublicRaffle[]> {
   const supabase = await createServerClient();
   let query = supabase

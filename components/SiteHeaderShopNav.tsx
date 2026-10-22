@@ -4,19 +4,33 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { productLineHubs } from "@/lib/shop/product-lines";
+import { realmShopPath } from "@/lib/shop/realm-ui";
+import type { RealmRow } from "@/lib/shop/types";
 
 function shopSectionActive(pathname: string) {
-  if (pathname.startsWith("/collections") || pathname.startsWith("/products")) {
+  if (
+    pathname.startsWith("/shop") ||
+    pathname.startsWith("/collections") ||
+    pathname.startsWith("/products")
+  ) {
     return true;
   }
   return productLineHubs.some((hub) => pathname === hub.path || pathname.startsWith(`${hub.path}/`));
 }
 
-export default function SiteHeaderShopNav({ variant }: { variant: "desktop" | "mobile" }) {
+export default function SiteHeaderShopNav({
+  variant,
+  shopRealms = []
+}: {
+  variant: "desktop" | "mobile";
+  shopRealms?: RealmRow[];
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const active = shopSectionActive(pathname);
+
+  const useRealms = shopRealms.length > 0;
 
   useEffect(() => {
     setOpen(false);
@@ -35,10 +49,30 @@ export default function SiteHeaderShopNav({ variant }: { variant: "desktop" | "m
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, [open, variant]);
 
+  const realmLinks = useRealms
+    ? shopRealms.map((realm) => ({
+        key: realm.id,
+        href: realmShopPath(realm.slug),
+        label: realm.name
+      }))
+    : productLineHubs.map((hub) => ({
+        key: hub.path,
+        href: hub.path,
+        label: hub.navLabel
+      }));
+
   if (variant === "mobile") {
     return (
       <div className="border-b border-white/5 pb-2">
         <p className="px-2 py-2 text-xs uppercase tracking-[0.25em] text-zinc-500">Shop</p>
+        <Link
+          href="/shop"
+          className={`block px-2 py-2 text-base transition ${
+            pathname === "/shop" ? "text-panteron-violet" : "text-zinc-300"
+          }`}
+        >
+          All realms
+        </Link>
         <Link
           href="/collections"
           className={`block px-2 py-2 text-base transition ${
@@ -47,15 +81,17 @@ export default function SiteHeaderShopNav({ variant }: { variant: "desktop" | "m
         >
           All collections
         </Link>
-        {productLineHubs.map((hub) => (
+        {realmLinks.map((link) => (
           <Link
-            key={hub.path}
-            href={hub.path}
+            key={link.key}
+            href={link.href}
             className={`block px-2 py-2 pl-4 text-base transition ${
-              pathname === hub.path ? "text-panteron-violet" : "text-zinc-300"
+              pathname === link.href || pathname.startsWith(`${link.href}/`)
+                ? "text-panteron-violet"
+                : "text-zinc-300"
             }`}
           >
-            {hub.navLabel}
+            {link.label}
           </Link>
         ))}
       </div>
@@ -79,20 +115,27 @@ export default function SiteHeaderShopNav({ variant }: { variant: "desktop" | "m
         </span>
       </button>
       {open ? (
-        <div className="absolute left-0 top-full z-50 mt-2 min-w-[12rem] border border-white/10 bg-panteron-black py-2 shadow-xl">
+        <div className="absolute left-0 top-full z-50 mt-2 max-h-[min(70vh,24rem)] min-w-[12rem] overflow-y-auto border border-white/10 bg-panteron-black py-2 shadow-xl">
+          <Link
+            href="/shop"
+            className="block px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/5 hover:text-white"
+          >
+            All realms
+          </Link>
           <Link
             href="/collections"
             className="block px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/5 hover:text-white"
           >
             All collections
           </Link>
-          {productLineHubs.map((hub) => (
+          <div className="my-2 border-t border-white/10" />
+          {realmLinks.map((link) => (
             <Link
-              key={hub.path}
-              href={hub.path}
+              key={link.key}
+              href={link.href}
               className="block px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/5 hover:text-white"
             >
-              {hub.navLabel}
+              {link.label}
             </Link>
           ))}
         </div>

@@ -2,18 +2,23 @@ import Link from "next/link";
 
 const steps = [
   {
-    title: "Collections per line",
-    detail: "Champagne, HOME, water, fashion — covers, copy, checkout rules.",
+    title: "Realms copy & heroes",
+    detail: "Taglines, descriptions, and hero images for each /shop realm.",
+    href: "/admin/realms"
+  },
+  {
+    title: "Collections per realm",
+    detail: "Assign every drop to a realm; covers, checkout rules, reveal times.",
     href: "/admin/collections"
   },
   {
     title: "Products + specs",
-    detail: "Photos, prices, specifications; stock count for bottles.",
+    detail: "Photos, prices, line-specific attributes; stock for bottles and limited runs.",
     href: "/admin/products"
   },
   {
-    title: "Line raffles",
-    detail: "Tag draws with product line so they show on hub pages.",
+    title: "Realm raffles",
+    detail: "Tag draws with product line so they show on the matching realm hub.",
     href: "/admin/raffles"
   },
   {
@@ -66,8 +71,8 @@ export default function AdminLaunchChecklist() {
       </ol>
       <p className="mt-8 text-xs text-zinc-500">
         Tip: on Vercel you can leave{" "}
-        <code className="text-zinc-400">NEXT_PUBLIC_SITE_URL</code> unset (or set your real domain) —
-        avoid <code className="text-zinc-400">localhost</code> in Production.
+        <code className="text-zinc-400">NEXT_PUBLIC_SITE_URL</code> unset (or set your real domain)
+        — avoid <code className="text-zinc-400">localhost</code> in Production.
       </p>
     </div>
   );

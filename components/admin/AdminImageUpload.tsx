@@ -13,7 +13,7 @@ export default function AdminImageUpload({
   hint
 }: {
   label: string;
-  folder: "collections" | "products" | "music";
+  folder: "collections" | "products" | "music" | "realms";
   value: string;
   onChange: (url: string) => void;
   hint?: string;

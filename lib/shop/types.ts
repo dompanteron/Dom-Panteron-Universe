@@ -1,5 +1,24 @@
 import type { ProductLine } from "@/lib/shop/product-lines";
 
+export type RealmAccent = "violet" | "gold" | "emerald" | "rose" | "ice" | "amber";
+
+export type RealmKind = "commerce" | "music" | "mixed";
+
+export type RealmRow = {
+  id: string;
+  slug: string;
+  name: string;
+  tagline: string | null;
+  description: string | null;
+  hero_image_url: string | null;
+  accent: RealmAccent;
+  display_order: number;
+  status: string;
+  kind: RealmKind;
+  listen_path: string | null;
+  created_at: string;
+};
+
 export type CollectionRow = {
   id: string;
   name: string;
@@ -10,6 +29,7 @@ export type CollectionRow = {
   display_order: number;
   status: string;
   product_line: ProductLine | null;
+  realm_id: string | null;
   requires_age_confirm: boolean;
   allow_multi_quantity: boolean;
   max_quantity_per_order: number;

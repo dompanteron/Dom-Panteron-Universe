@@ -1,9 +1,19 @@
-export const PRODUCT_LINE_VALUES = ["fashion", "champagne", "home", "water"] as const;
+export const PRODUCT_LINE_VALUES = [
+  "fashion",
+  "champagne",
+  "home",
+  "water",
+  "art",
+  "jewelry",
+  "music"
+] as const;
 
 export type ProductLine = (typeof PRODUCT_LINE_VALUES)[number];
 
-/** Lines with dedicated marketing hub routes (not fashion). */
+/** Legacy hub keys; prefer /shop/[slug] from realms table. */
 export type ProductLineHubKey = "champagne" | "home" | "water";
+
+export type CommerceRealmSlug = ProductLine;
 
 export type ProductLineHubConfig = {
   key: ProductLineHubKey;
@@ -20,7 +30,7 @@ export type ProductLineHubConfig = {
 export const productLineHubs: ProductLineHubConfig[] = [
   {
     key: "champagne",
-    path: "/champagne",
+    path: "/shop/champagne",
     navLabel: "Champagne",
     eyebrow: "Champagne",
     title: "Raise a glass to the frequency",
@@ -31,7 +41,7 @@ export const productLineHubs: ProductLineHubConfig[] = [
   },
   {
     key: "home",
-    path: "/home",
+    path: "/shop/home",
     navLabel: "HOME",
     eyebrow: "HOME",
     title: "Live inside the jungle mood",
@@ -42,7 +52,7 @@ export const productLineHubs: ProductLineHubConfig[] = [
   },
   {
     key: "water",
-    path: "/water",
+    path: "/shop/water",
     navLabel: "Water bottles",
     eyebrow: "Water",
     title: "Carry the signal with you",

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import ProductAttributesList from "@/components/shop/ProductAttributesList";
 import ProductGallery from "@/components/shop/ProductGallery";
 import ProductPurchasePanel from "@/components/shop/ProductPurchasePanel";
-import { productLineHubs } from "@/lib/shop/product-lines";
+import { productLineLabel, shopHubHrefForLine } from "@/lib/shop/realm-ui";
 import { ensureCurrentMember } from "@/lib/members";
 import { getPaymentOptionsForUi } from "@/lib/payments/payment-providers";
 import { getCollectionRevealState } from "@/lib/shop/collection-reveal";
@@ -57,30 +57,22 @@ export default async function ProductPage({ params }: Props) {
     : false;
 
   const line = product.collection?.product_line ?? null;
-  const lineHub =
-    line && line !== "fashion" ? productLineHubs.find((hub) => hub.key === line) : null;
-  const lineEyebrow =
-    line === "champagne"
-      ? "Champagne"
-      : line === "home"
-        ? "HOME"
-        : line === "water"
-          ? "Water"
-          : "Ready-made";
+  const realmHref = line ? shopHubHrefForLine(line) : "/shop";
+  const lineEyebrow = productLineLabel(line);
 
   return (
     <main className="text-white">
       <section className="border-b border-white/10 bg-panteron-black">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-500">
-            <Link href="/collections" className="transition hover:text-panteron-violet">
+            <Link href="/shop" className="transition hover:text-panteron-violet">
               Shop
             </Link>
             <span aria-hidden>/</span>
-            {lineHub ? (
+            {line ? (
               <>
-                <Link href={lineHub.path} className="transition hover:text-panteron-violet">
-                  {lineHub.navLabel}
+                <Link href={realmHref} className="transition hover:text-panteron-violet">
+                  {lineEyebrow}
                 </Link>
                 <span aria-hidden>/</span>
               </>
@@ -140,6 +132,7 @@ export default async function ProductPage({ params }: Props) {
               purchaseLocked={purchaseLocked}
               checkoutRules={checkoutRules}
               stockQuantity={product.stock_quantity}
+              browseMoreHref={realmHref}
             />
           </div>
         </div>

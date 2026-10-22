@@ -1,7 +1,18 @@
 import type { ProductLine, ProductLineHubKey } from "@/lib/shop/product-lines";
 import { productLineHubs } from "@/lib/shop/product-lines";
+import { realmShopPath } from "@/lib/shop/realm-ui";
 
-export function raffleLineLabel(line: ProductLine | null | undefined): string {
+const REALM_LABELS: Record<string, string> = {
+  fashion: "Fashion",
+  champagne: "Champagne",
+  home: "HOME",
+  water: "Water bottles",
+  art: "Art",
+  jewelry: "Jewelry",
+  music: "Music"
+};
+
+export function raffleLineLabel(line: ProductLine | string | null | undefined): string {
   if (!line) {
     return "Universe";
   }
@@ -9,22 +20,18 @@ export function raffleLineLabel(line: ProductLine | null | undefined): string {
   if (hub) {
     return hub.navLabel;
   }
-  if (line === "fashion") {
-    return "Fashion";
-  }
-  return line;
+  return REALM_LABELS[line] ?? line;
 }
 
-export function raffleLineHref(line: ProductLine | null | undefined): string {
+export function raffleLineHref(line: ProductLine | string | null | undefined): string {
   if (!line) {
     return "/raffles";
   }
-  const hub = productLineHubs.find((entry) => entry.key === line);
-  if (hub) {
-    return `${hub.path}#draws`;
-  }
   if (line === "fashion") {
-    return "/collections";
+    return "/shop/fashion#draws";
+  }
+  if (REALM_LABELS[line]) {
+    return `${realmShopPath(line)}#draws`;
   }
   return "/raffles";
 }

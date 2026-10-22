@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function ClothingPage() {
-  redirect("/collections");
+  redirect("/shop/fashion");
 }

@@ -16,11 +16,13 @@ export default async function AdminEditCollectionPage({
 }) {
   await requireAdmin();
   const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("collections")
-    .select("*")
-    .eq("id", params.id)
-    .maybeSingle();
+  const [collectionResult, realmsResult] = await Promise.all([
+    admin.from("collections").select("*").eq("id", params.id).maybeSingle(),
+    admin.from("realms").select("id, slug, name").order("display_order", { ascending: true })
+  ]);
+
+  const { data, error } = collectionResult;
+  const realms = realmsResult.data ?? [];
 
   if (error || !data) {
     notFound();
@@ -33,7 +35,7 @@ export default async function AdminEditCollectionPage({
       </Link>
       <h1 className="font-display mt-6 text-4xl font-semibold">Edit collection</h1>
       <div className="mt-12 border border-white/10 p-6 sm:p-8">
-        <AdminCollectionForm collection={data} />
+        <AdminCollectionForm collection={data} realms={realms} />
       </div>
     </section>
   );

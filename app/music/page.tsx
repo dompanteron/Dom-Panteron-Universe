@@ -148,7 +148,7 @@ export default async function MusicPage() {
                 Join the universe
               </Link>
               <Link
-                href="/collections"
+                href="/shop"
                 className="border border-white/25 px-6 py-3 text-sm font-medium text-white transition hover:border-panteron-violet hover:text-panteron-violet"
               >
                 Explore collections

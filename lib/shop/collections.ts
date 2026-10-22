@@ -1,5 +1,5 @@
-import type { ProductLineHubKey } from "@/lib/shop/product-lines";
-import type { CollectionRow, ProductRow } from "@/lib/shop/types";
+import type { ProductLine, ProductLineHubKey } from "@/lib/shop/product-lines";
+import type { CollectionRow, ProductRow, RealmRow } from "@/lib/shop/types";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 
 export type CollectionWithProducts = CollectionRow & {
@@ -21,6 +21,7 @@ export async function getActiveCollectionsWithProducts(): Promise<CollectionWith
       display_order,
       status,
       product_line,
+      realm_id,
       requires_age_confirm,
       allow_multi_quantity,
       max_quantity_per_order,
@@ -69,9 +70,27 @@ export async function getActiveCollectionsWithProducts(): Promise<CollectionWith
 export async function getActiveCollectionsByProductLine(
   line: ProductLineHubKey
 ): Promise<CollectionWithProducts[]> {
+  return getActiveCollectionsByRealmSlug(line);
+}
+
+export async function getActiveCollectionsByRealmSlug(
+  slug: ProductLine | string
+): Promise<CollectionWithProducts[]> {
   const all = await getActiveCollectionsWithProducts();
   return all
-    .filter((collection) => collection.product_line === line)
+    .filter((collection) => collection.product_line === slug)
+    .sort((a, b) => a.display_order - b.display_order);
+}
+
+export async function getActiveCollectionsForRealm(
+  realm: Pick<RealmRow, "id" | "slug">
+): Promise<CollectionWithProducts[]> {
+  const all = await getActiveCollectionsWithProducts();
+  return all
+    .filter(
+      (collection) =>
+        collection.realm_id === realm.id || collection.product_line === realm.slug
+    )
     .sort((a, b) => a.display_order - b.display_order);
 }
 
@@ -85,6 +104,7 @@ const collectionSelect = `
   display_order,
   status,
   product_line,
+  realm_id,
   requires_age_confirm,
   allow_multi_quantity,
   max_quantity_per_order,

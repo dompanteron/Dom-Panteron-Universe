@@ -1,12 +1,5 @@
-import ProductLineHubPage, {
-  productLineHubMetadata
-} from "@/components/shop/ProductLineHubPage";
-import { getProductLineHub } from "@/lib/shop/product-lines";
+import { redirect } from "next/navigation";
 
-const config = getProductLineHub("champagne");
-
-export const metadata = productLineHubMetadata(config);
-
-export default function ChampagneLinePage() {
-  return <ProductLineHubPage config={config} />;
+export default function ChampagneLegacyPage() {
+  redirect("/shop/champagne");
 }

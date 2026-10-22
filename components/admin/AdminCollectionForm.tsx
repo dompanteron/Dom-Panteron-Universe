@@ -4,7 +4,11 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import AdminImageUpload from "@/components/admin/AdminImageUpload";
 import { toDatetimeLocal } from "@/lib/raffles";
-import { PRODUCT_LINE_VALUES } from "@/lib/shop/product-lines";
+export type AdminRealmOption = {
+  id: string;
+  slug: string;
+  name: string;
+};
 
 export type CollectionFormValues = {
   id?: string;
@@ -16,6 +20,7 @@ export type CollectionFormValues = {
   display_order: number;
   status: string;
   product_line: string | null;
+  realm_id?: string | null;
   requires_age_confirm?: boolean;
   allow_multi_quantity?: boolean;
   max_quantity_per_order?: number;
@@ -27,10 +32,28 @@ export type CollectionFormValues = {
 const fieldClass =
   "w-full border border-white/15 bg-transparent px-4 py-3 text-white outline-none focus:border-panteron-violet";
 
+function initialRealmId(
+  collection: CollectionFormValues | undefined,
+  realms: AdminRealmOption[]
+): string {
+  if (collection?.realm_id) {
+    return collection.realm_id;
+  }
+  if (collection?.product_line) {
+    const match = realms.find((realm) => realm.slug === collection.product_line);
+    if (match) {
+      return match.id;
+    }
+  }
+  return "";
+}
+
 export default function AdminCollectionForm({
-  collection
+  collection,
+  realms = []
 }: {
   collection?: CollectionFormValues;
+  realms?: AdminRealmOption[];
 }) {
   const router = useRouter();
   const isEdit = Boolean(collection?.id);
@@ -41,7 +64,7 @@ export default function AdminCollectionForm({
   const [coverUrl, setCoverUrl] = useState(collection?.cover_image_url ?? "");
   const [displayOrder, setDisplayOrder] = useState(String(collection?.display_order ?? 0));
   const [status, setStatus] = useState(collection?.status ?? "draft");
-  const [productLine, setProductLine] = useState(collection?.product_line ?? "");
+  const [realmId, setRealmId] = useState(() => initialRealmId(collection, realms));
   const [requiresAgeConfirm, setRequiresAgeConfirm] = useState(
     collection?.requires_age_confirm ?? false
   );
@@ -68,6 +91,7 @@ export default function AdminCollectionForm({
     setError(null);
     setMessage(null);
 
+    const selectedRealm = realms.find((realm) => realm.id === realmId);
     const payload = {
       name,
       slug,
@@ -76,7 +100,8 @@ export default function AdminCollectionForm({
       cover_image_url: coverUrl,
       display_order: displayOrder,
       status,
-      product_line: productLine || null,
+      realm_id: realmId || null,
+      product_line: selectedRealm?.slug ?? null,
       requires_age_confirm: requiresAgeConfirm,
       allow_multi_quantity: allowMultiQuantity,
       max_quantity_per_order: maxQuantity,
@@ -157,19 +182,22 @@ export default function AdminCollectionForm({
         </select>
       </label>
       <label className="block">
-        <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">Product line</span>
+        <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">Realm</span>
         <select
-          value={productLine}
-          onChange={(e) => setProductLine(e.target.value)}
+          value={realmId}
+          onChange={(e) => setRealmId(e.target.value)}
           className={`${fieldClass} bg-panteron-black`}
         >
           <option value="">Not set</option>
-          {PRODUCT_LINE_VALUES.map((line) => (
-            <option key={line} value={line}>
-              {line}
+          {realms.map((realm) => (
+            <option key={realm.id} value={realm.id}>
+              {realm.name} ({realm.slug})
             </option>
           ))}
         </select>
+        <p className="mt-2 text-xs text-zinc-500">
+          Sets which /shop realm hub shows this drop. Checkout rules stay on the collection.
+        </p>
       </label>
       <div className="md:col-span-2 border border-white/10 p-4 sm:p-5">
         <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">Checkout rules</p>
