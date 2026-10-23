@@ -1,3 +1,4 @@
+/** Seeded realm slugs; new slugs come from the realms table (see realm-admin). */
 export const PRODUCT_LINE_VALUES = [
   "fashion",
   "champagne",

@@ -1,4 +1,6 @@
-import { isProductLine, productLineHubs, type ProductLine } from "@/lib/shop/product-lines";
+import { parseProductLineSlug } from "@/lib/shop/realm-admin";
+import { realmShopPath } from "@/lib/shop/realm-ui";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const STATUSES = new Set(["draft", "active", "ended"]);
 
@@ -11,18 +13,15 @@ export type RaffleInput = {
   ticket_limit_per_user: number | null;
   draw_date: string;
   status: string;
-  product_line: ProductLine | null;
+  product_line: string | null;
 };
 
-export function parseRaffleProductLine(value: unknown): ProductLine | null {
+export function parseRaffleProductLine(value: unknown): string | null {
   const raw = String(value ?? "").trim();
   if (!raw || raw === "universe") {
     return null;
   }
-  if (!isProductLine(raw)) {
-    return null;
-  }
-  return raw;
+  return parseProductLineSlug(raw);
 }
 
 export function parseRaffleBody(body: {
@@ -91,7 +90,7 @@ export function parseRaffleBody(body: {
     String(body.product_line).trim() !== "universe" &&
     !productLine
   ) {
-    return { ok: false, error: "Invalid product line for raffle." };
+    return { ok: false, error: "Invalid realm for raffle." };
   }
 
   return {
@@ -120,15 +119,26 @@ export function toDatetimeLocal(iso: string) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-export function revalidateRafflePaths() {
-  return [
-    "/admin/raffles",
-    "/raffles",
-    "/admin",
-    ...productLineHubs.map((hub) => hub.path),
-    "/shop",
-    ...productLineHubs.map((hub) => `/shop/${hub.key}`)
-  ] as const;
+export function revalidateRafflePaths(extraRealmSlug?: string | null) {
+  const paths = new Set<string>(["/admin/raffles", "/raffles", "/admin", "/shop"]);
+  if (extraRealmSlug) {
+    paths.add(realmShopPath(extraRealmSlug));
+  }
+  return [...paths];
+}
+
+export async function revalidateRafflePathsForAllRealms(extraRealmSlug?: string | null) {
+  const paths = revalidateRafflePaths(extraRealmSlug);
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin.from("realms").select("slug");
+    for (const row of data ?? []) {
+      paths.push(realmShopPath(row.slug as string));
+    }
+  } catch {
+    // ignore
+  }
+  return [...new Set(paths)];
 }
 
 export type PublicRaffle = {
@@ -142,7 +152,7 @@ export type PublicRaffle = {
   ticket_limit_per_user: number | null;
   draw_date: string;
   status: string;
-  product_line?: ProductLine | null;
+  product_line?: string | null;
   winner_number?: number | null;
   winner_initials?: string | null;
   winner_display_name?: string | null;

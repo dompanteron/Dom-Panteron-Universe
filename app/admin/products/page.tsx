@@ -2,11 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AdminLineFilterBar } from "@/components/admin/AdminFilterBar";
 import AdminProductForm from "@/components/admin/AdminProductForm";
+import {
+  buildAdminLineFilterOptions,
+  fetchAdminRealmOptions,
+  realmLabelForSlug,
+  realmSlugSet
+} from "@/lib/admin/admin-realm-options";
 import { parseAdminLineFilter } from "@/lib/admin/admin-list-filters";
-import { raffleLineLabel } from "@/lib/raffles/raffle-line-display";
 import { requireAdmin } from "@/lib/members";
-import type { ProductLine } from "@/lib/shop/product-lines";
-import { PRODUCT_LINE_VALUES } from "@/lib/shop/product-lines";
 import { formatProductPrice } from "@/lib/shop/format-price";
 import { isLowStock, isOutOfStock, isTrackedStock } from "@/lib/shop/low-stock";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -15,14 +18,17 @@ export const metadata: Metadata = {
   title: "Admin products | Dom Panteron Universe"
 };
 
-function productLineFromCollection(collections: unknown): ProductLine | null {
+function productLineFromCollection(
+  collections: unknown,
+  validSlugs: Set<string>
+): string | null {
   const col = Array.isArray(collections) ? collections[0] : collections;
   if (!col || typeof col !== "object") {
     return null;
   }
   const line = (col as { product_line?: string | null }).product_line;
-  if (line && (PRODUCT_LINE_VALUES as readonly string[]).includes(line)) {
-    return line as ProductLine;
+  if (line && validSlugs.has(line)) {
+    return line;
   }
   return null;
 }
@@ -33,7 +39,13 @@ export default async function AdminProductsPage({
   searchParams: { line?: string };
 }) {
   await requireAdmin();
-  const lineFilter = parseAdminLineFilter(searchParams.line);
+  const realms = await fetchAdminRealmOptions();
+  const validSlugs = realmSlugSet(realms);
+  const lineFilter = parseAdminLineFilter(
+    searchParams.line,
+    realms.map((realm) => realm.slug)
+  );
+  const lineOptions = buildAdminLineFilterOptions(realms);
 
   const admin = createAdminClient();
 
@@ -56,7 +68,8 @@ export default async function AdminProductsPage({
   let rows = products ?? [];
   if (lineFilter !== "all") {
     rows = rows.filter(
-      (row) => (productLineFromCollection(row.collections) ?? "fashion") === lineFilter
+      (row) =>
+        (productLineFromCollection(row.collections, validSlugs) ?? "fashion") === lineFilter
     );
   }
 
@@ -68,11 +81,15 @@ export default async function AdminProductsPage({
         Ready-made pieces assigned to collections. Stock tracking powers water-bottle inventory.
       </p>
 
-      <AdminLineFilterBar basePath="/admin/products" currentLine={lineFilter} />
+      <AdminLineFilterBar
+        basePath="/admin/products"
+        currentLine={lineFilter}
+        lineOptions={lineOptions}
+      />
 
       <p className="mt-6 text-sm text-zinc-500">
         Showing {rows.length} product{rows.length === 1 ? "" : "s"}
-        {lineFilter !== "all" ? ` · ${raffleLineLabel(lineFilter)}` : ""}
+        {lineFilter !== "all" ? ` · ${realmLabelForSlug(lineFilter, realms)}` : ""}
       </p>
 
       <div className="mt-12 border border-white/10 p-6 sm:p-8">
@@ -93,7 +110,7 @@ export default async function AdminProductsPage({
               <tr className="text-xs uppercase tracking-[0.2em] text-zinc-500">
                 <th className="py-4 pr-4 font-normal">Title</th>
                 <th className="py-4 pr-4 font-normal">Collection</th>
-                <th className="py-4 pr-4 font-normal">Line</th>
+                <th className="py-4 pr-4 font-normal">Realm</th>
                 <th className="py-4 pr-4 font-normal">Stock</th>
                 <th className="py-4 pr-4 font-normal">Price</th>
                 <th className="py-4 pr-4 font-normal">Status</th>
@@ -103,7 +120,7 @@ export default async function AdminProductsPage({
             <tbody className="divide-y divide-white/10">
               {rows.map((row) => {
                 const col = Array.isArray(row.collections) ? row.collections[0] : row.collections;
-                const line = productLineFromCollection(row.collections);
+                const line = productLineFromCollection(row.collections, validSlugs);
                 const stock = row.stock_quantity as number | null;
                 let stockLabel = "One-of-one";
                 let stockClass = "text-zinc-500";
@@ -126,7 +143,7 @@ export default async function AdminProductsPage({
                       <p className="text-zinc-500">{row.slug}</p>
                     </td>
                     <td className="py-4 pr-4">{col?.name ?? "—"}</td>
-                    <td className="py-4 pr-4">{raffleLineLabel(line ?? "fashion")}</td>
+                    <td className="py-4 pr-4">{realmLabelForSlug(line ?? "fashion", realms)}</td>
                     <td className={`py-4 pr-4 ${stockClass}`}>{stockLabel}</td>
                     <td className="py-4 pr-4">
                       {formatProductPrice(Number(row.price), row.currency)}

@@ -123,20 +123,24 @@ export default function AdminRealmForm({ realm }: { realm: RealmRow }) {
             ))}
           </select>
         </div>
-        <div>
-          <label className="mb-2 block text-sm text-zinc-400" htmlFor="realm-status">
-            Status
-          </label>
-          <select
-            id="realm-status"
-            className={fieldClass}
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-          >
-            <option value="draft">draft</option>
-            <option value="active">active</option>
-          </select>
-        </div>
+      <div>
+        <label className="mb-2 block text-sm text-zinc-400" htmlFor="realm-status">
+          Status
+        </label>
+        <select
+          id="realm-status"
+          className={fieldClass}
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+        >
+          <option value="draft">draft</option>
+          <option value="active">active</option>
+        </select>
+        <p className="mt-2 text-xs text-zinc-500">
+          Draft hides the realm from /shop and the header. Prefer draft over delete when sunsetting a
+          world.
+        </p>
+      </div>
       </div>
       <div className="grid gap-6 sm:grid-cols-2">
         <div>

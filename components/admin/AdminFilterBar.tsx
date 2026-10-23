@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   adminFilterHref,
-  adminLineFilterOptions,
   adminOrderStatusFilterOptions,
   type AdminLineFilter,
   type AdminOrderStatusFilter
@@ -14,18 +13,22 @@ const pillClass = (active: boolean) =>
       : "border-white/15 text-zinc-400 hover:border-white/30 hover:text-white"
   }`;
 
+export type LineFilterOption = { value: AdminLineFilter; label: string };
+
 export function AdminLineFilterBar({
   basePath,
   currentLine,
-  currentStatus
+  currentStatus,
+  lineOptions
 }: {
   basePath: string;
   currentLine: AdminLineFilter;
   currentStatus?: AdminOrderStatusFilter;
+  lineOptions: LineFilterOption[];
 }) {
   return (
     <div className="mt-8 flex flex-wrap gap-2">
-      {adminLineFilterOptions.map((option) => (
+      {lineOptions.map((option) => (
         <Link
           key={option.value}
           href={adminFilterHref(basePath, {
@@ -44,11 +47,13 @@ export function AdminLineFilterBar({
 export function AdminOrderFiltersBar({
   basePath,
   currentLine,
-  currentStatus
+  currentStatus,
+  lineOptions
 }: {
   basePath: string;
   currentLine: AdminLineFilter;
   currentStatus: AdminOrderStatusFilter;
+  lineOptions: LineFilterOption[];
 }) {
   return (
     <div className="mt-8 space-y-4">
@@ -56,6 +61,7 @@ export function AdminOrderFiltersBar({
         basePath={basePath}
         currentLine={currentLine}
         currentStatus={currentStatus}
+        lineOptions={lineOptions}
       />
       <div className="flex flex-wrap gap-2">
         {adminOrderStatusFilterOptions.map((option) => (

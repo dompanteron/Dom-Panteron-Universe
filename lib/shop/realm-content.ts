@@ -48,12 +48,16 @@ const BY_SLUG: Partial<Record<string, RealmEmptyContent>> = {
   }
 };
 
-export function realmEmptyContent(realm: Pick<RealmRow, "slug" | "name" | "kind">): RealmEmptyContent {
-  return (
-    BY_SLUG[realm.slug] ?? {
-      headline: `${realm.name} is waking up`,
-      body: "Pieces for this realm are being prepared — one account, one checkout when they land.",
-      hint: "Join the universe for drop alerts."
-    }
-  );
+export function realmEmptyContent(
+  realm: Pick<RealmRow, "slug" | "name" | "kind" | "tagline" | "description">
+): RealmEmptyContent {
+  const seeded = BY_SLUG[realm.slug];
+  return {
+    headline: realm.tagline?.trim() || seeded?.headline || `${realm.name} is waking up`,
+    body:
+      realm.description?.trim() ||
+      seeded?.body ||
+      "Pieces for this realm are being prepared — one account, one checkout when they land.",
+    hint: seeded?.hint ?? "Join the universe for drop alerts."
+  };
 }

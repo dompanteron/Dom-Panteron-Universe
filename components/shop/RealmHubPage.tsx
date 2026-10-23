@@ -18,7 +18,8 @@ export function realmHubMetadata(realm: RealmRow): Metadata {
   return buildShareMetadata({
     title: `${realm.name} | Dom Panteron Universe`,
     description: realm.description ?? realm.tagline ?? `${realm.name} — shop the universe.`,
-    path: realmShopPath(realm.slug)
+    path: realmShopPath(realm.slug),
+    imageUrl: realm.hero_image_url
   });
 }
 

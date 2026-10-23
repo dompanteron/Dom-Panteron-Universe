@@ -1,12 +1,13 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { ensureCurrentMember } from "@/lib/members";
+import {
+  isRealmAccent,
+  isRealmKind,
+  REALM_STATUSES
+} from "@/lib/shop/realm-admin";
 import { revalidateShopPaths } from "@/lib/shop/revalidate-shop-paths";
 import { createAdminClient } from "@/lib/supabase/admin";
-
-const ACCENTS = ["violet", "gold", "emerald", "rose", "ice", "amber"] as const;
-const STATUSES = ["draft", "active"] as const;
-const KINDS = ["commerce", "music", "mixed"] as const;
 
 export async function PATCH(
   request: Request,
@@ -42,21 +43,21 @@ export async function PATCH(
 
   if (body.accent !== undefined) {
     const accent = String(body.accent);
-    if (!(ACCENTS as readonly string[]).includes(accent)) {
+    if (!isRealmAccent(accent)) {
       return NextResponse.json({ ok: false, error: "Invalid accent." }, { status: 400 });
     }
     patch.accent = accent;
   }
   if (body.status !== undefined) {
     const status = String(body.status);
-    if (!(STATUSES as readonly string[]).includes(status)) {
+    if (!(REALM_STATUSES as readonly string[]).includes(status as (typeof REALM_STATUSES)[number])) {
       return NextResponse.json({ ok: false, error: "Invalid status." }, { status: 400 });
     }
     patch.status = status;
   }
   if (body.kind !== undefined) {
     const kind = String(body.kind);
-    if (!(KINDS as readonly string[]).includes(kind)) {
+    if (!isRealmKind(kind)) {
       return NextResponse.json({ ok: false, error: "Invalid kind." }, { status: 400 });
     }
     patch.kind = kind;
@@ -82,8 +83,57 @@ export async function PATCH(
   }
 
   revalidatePath("/shop");
+  revalidatePath("/admin/realms");
   revalidatePath(`/shop/${data.slug}`);
-  revalidateShopPaths();
+  revalidateShopPaths(undefined, [data.slug]);
+
+  return NextResponse.json({ ok: true });
+}
+
+export async function DELETE(
+  _request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { user, member } = await ensureCurrentMember();
+  if (!user || member?.role !== "admin") {
+    return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
+  }
+
+  const { id } = await context.params;
+  const admin = createAdminClient();
+
+  const { count, error: countError } = await admin
+    .from("collections")
+    .select("id", { count: "exact", head: true })
+    .eq("realm_id", id);
+
+  if (countError) {
+    return NextResponse.json({ ok: false, error: countError.message }, { status: 500 });
+  }
+
+  if ((count ?? 0) > 0) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          "This realm still has collections. Reassign or remove them, or set status to draft instead of deleting."
+      },
+      { status: 409 }
+    );
+  }
+
+  const { data: realm } = await admin.from("realms").select("slug").eq("id", id).maybeSingle();
+
+  const { error } = await admin.from("realms").delete().eq("id", id);
+  if (error) {
+    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+  }
+
+  revalidatePath("/shop");
+  revalidatePath("/admin/realms");
+  if (realm?.slug) {
+    revalidatePath(`/shop/${realm.slug}`);
+  }
 
   return NextResponse.json({ ok: true });
 }

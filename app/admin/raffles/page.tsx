@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import AdminRaffleForm from "@/components/AdminRaffleForm";
+import { fetchAdminRealmOptions } from "@/lib/admin/admin-realm-options";
 import { requireAdmin } from "@/lib/members";
 import { raffleLineLabel } from "@/lib/raffles/raffle-line-display";
-import type { ProductLine } from "@/lib/shop/product-lines";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const metadata: Metadata = {
@@ -19,7 +19,7 @@ type AdminRaffle = {
   total_entries: number;
   draw_date: string;
   status: string;
-  product_line: ProductLine | null;
+  product_line: string | null;
 };
 
 function formatDrawDate(value: string) {
@@ -34,6 +34,7 @@ function formatDrawDate(value: string) {
 
 export default async function AdminRafflesPage() {
   await requireAdmin();
+  const realms = await fetchAdminRealmOptions();
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("raffles")
@@ -68,7 +69,7 @@ export default async function AdminRafflesPage() {
       <div className="mt-12 border border-white/10 p-6 sm:p-8">
         <h2 className="font-display text-2xl">New raffle</h2>
         <div className="mt-6">
-          <AdminRaffleForm />
+          <AdminRaffleForm realms={realms} />
         </div>
       </div>
 

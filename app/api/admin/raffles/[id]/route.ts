@@ -1,7 +1,8 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { ensureCurrentMember } from "@/lib/members";
-import { parseRaffleBody, revalidateRafflePaths } from "@/lib/raffles";
+import { parseRaffleBody, revalidateRafflePathsForAllRealms } from "@/lib/raffles";
+import { validateRaffleRealmSlug } from "@/lib/raffles/validate-raffle-realm";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function PATCH(
@@ -41,6 +42,11 @@ export async function PATCH(
       );
     }
 
+    const realmCheck = await validateRaffleRealmSlug(admin, parsed.data.product_line);
+    if (!realmCheck.ok) {
+      return NextResponse.json({ ok: false, error: realmCheck.error }, { status: 400 });
+    }
+
     const { data, error } = await admin
       .from("raffles")
       .update(parsed.data)
@@ -52,7 +58,7 @@ export async function PATCH(
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
-    for (const path of revalidateRafflePaths()) {
+    for (const path of await revalidateRafflePathsForAllRealms(parsed.data.product_line)) {
       revalidatePath(path);
     }
     revalidatePath(`/admin/raffles/${params.id}`);

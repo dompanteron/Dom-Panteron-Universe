@@ -2,13 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AdminOrderFiltersBar } from "@/components/admin/AdminFilterBar";
 import {
+  buildAdminLineFilterOptions,
+  fetchAdminRealmOptions,
+  realmLabelForSlug,
+  realmSlugSet
+} from "@/lib/admin/admin-realm-options";
+import {
   parseAdminLineFilter,
   parseAdminOrderStatusFilter
 } from "@/lib/admin/admin-list-filters";
-import { raffleLineLabel } from "@/lib/raffles/raffle-line-display";
 import { requireAdmin } from "@/lib/members";
-import type { ProductLine } from "@/lib/shop/product-lines";
-import { PRODUCT_LINE_VALUES } from "@/lib/shop/product-lines";
 import { formatProductPrice } from "@/lib/shop/format-price";
 import { formatOrderDate } from "@/lib/shop/product-orders";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -30,7 +33,7 @@ type OrderRow = {
   products: unknown;
 };
 
-function orderProductLine(products: unknown): ProductLine | null {
+function orderProductLine(products: unknown, validSlugs: Set<string>): string | null {
   if (!products || typeof products !== "object") {
     return null;
   }
@@ -44,8 +47,8 @@ function orderProductLine(products: unknown): ProductLine | null {
     return null;
   }
   const line = (collection as { product_line?: string | null }).product_line;
-  if (line && (PRODUCT_LINE_VALUES as readonly string[]).includes(line)) {
-    return line as ProductLine;
+  if (line && validSlugs.has(line)) {
+    return line;
   }
   return null;
 }
@@ -56,8 +59,14 @@ export default async function AdminOrdersPage({
   searchParams: { line?: string; status?: string };
 }) {
   await requireAdmin();
-  const lineFilter = parseAdminLineFilter(searchParams.line);
+  const realms = await fetchAdminRealmOptions();
+  const validSlugs = realmSlugSet(realms);
+  const lineFilter = parseAdminLineFilter(
+    searchParams.line,
+    realms.map((realm) => realm.slug)
+  );
   const statusFilter = parseAdminOrderStatusFilter(searchParams.status);
+  const lineOptions = buildAdminLineFilterOptions(realms);
 
   const admin = createAdminClient();
   let query = admin
@@ -75,7 +84,9 @@ export default async function AdminOrdersPage({
 
   let orders = (data ?? []) as OrderRow[];
   if (lineFilter !== "all") {
-    orders = orders.filter((row) => (orderProductLine(row.products) ?? "fashion") === lineFilter);
+    orders = orders.filter(
+      (row) => (orderProductLine(row.products, validSlugs) ?? "fashion") === lineFilter
+    );
   }
 
   return (
@@ -91,11 +102,12 @@ export default async function AdminOrdersPage({
         basePath="/admin/orders"
         currentLine={lineFilter}
         currentStatus={statusFilter}
+        lineOptions={lineOptions}
       />
 
       <p className="mt-6 text-sm text-zinc-500">
         Showing {orders.length} order{orders.length === 1 ? "" : "s"}
-        {lineFilter !== "all" ? ` · ${raffleLineLabel(lineFilter)}` : ""}
+        {lineFilter !== "all" ? ` · ${realmLabelForSlug(lineFilter, realms)}` : ""}
         {statusFilter !== "all" ? ` · ${statusFilter}` : ""}
       </p>
 
@@ -111,7 +123,7 @@ export default async function AdminOrdersPage({
                 <th className="py-4 pr-4 font-normal">When</th>
                 <th className="py-4 pr-4 font-normal">Customer</th>
                 <th className="py-4 pr-4 font-normal">Product</th>
-                <th className="py-4 pr-4 font-normal">Line</th>
+                <th className="py-4 pr-4 font-normal">Realm</th>
                 <th className="py-4 pr-4 font-normal">Total</th>
                 <th className="py-4 pr-4 font-normal">Status</th>
                 <th className="py-4 font-normal"> </th>
@@ -120,7 +132,7 @@ export default async function AdminOrdersPage({
             <tbody className="divide-y divide-white/10">
               {orders.map((row) => {
                 const product = Array.isArray(row.products) ? row.products[0] : row.products;
-                const line = orderProductLine(row.products);
+                const line = orderProductLine(row.products, validSlugs);
                 return (
                   <tr key={row.id} className="text-sm text-zinc-300">
                     <td className="py-4 pr-4 whitespace-nowrap text-zinc-500">
@@ -137,7 +149,7 @@ export default async function AdminOrdersPage({
                       </p>
                     </td>
                     <td className="py-4 pr-4 text-zinc-400">
-                      {raffleLineLabel(line ?? "fashion")}
+                      {realmLabelForSlug(line ?? "fashion", realms)}
                     </td>
                     <td className="py-4 pr-4">
                       {formatProductPrice(Number(row.total_price), row.currency)}

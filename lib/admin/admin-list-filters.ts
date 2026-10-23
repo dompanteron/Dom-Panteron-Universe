@@ -1,16 +1,18 @@
 import type { ProductOrderStatus } from "@/lib/shop/product-orders";
 import { PRODUCT_ORDER_STATUSES } from "@/lib/shop/product-orders";
-import { isProductLine, PRODUCT_LINE_VALUES, type ProductLine } from "@/lib/shop/product-lines";
 
-export type AdminLineFilter = ProductLine | "all";
+export type AdminLineFilter = "all" | string;
 
 export type AdminOrderStatusFilter = ProductOrderStatus | "all";
 
-export function parseAdminLineFilter(value: string | undefined): AdminLineFilter {
+export function parseAdminLineFilter(
+  value: string | undefined,
+  validRealmSlugs: readonly string[]
+): AdminLineFilter {
   if (!value || value === "all") {
     return "all";
   }
-  if (isProductLine(value)) {
+  if (validRealmSlugs.includes(value)) {
     return value;
   }
   return "all";
@@ -40,11 +42,6 @@ export function adminFilterHref(
   const query = params.toString();
   return query ? `${basePath}?${query}` : basePath;
 }
-
-export const adminLineFilterOptions = [
-  { value: "all" as const, label: "All lines" },
-  ...PRODUCT_LINE_VALUES.map((line) => ({ value: line, label: line }))
-];
 
 export const adminOrderStatusFilterOptions = [
   { value: "all" as const, label: "All statuses" },

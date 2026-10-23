@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toDatetimeLocal } from "@/lib/raffles";
-import { PRODUCT_LINE_VALUES } from "@/lib/shop/product-lines";
+import type { AdminRealmOption } from "@/lib/admin/admin-realm-options";
 
 export type RaffleFormValues = {
   id?: string;
@@ -18,7 +18,13 @@ export type RaffleFormValues = {
   product_line?: string | null;
 };
 
-export default function AdminRaffleForm({ raffle }: { raffle?: RaffleFormValues }) {
+export default function AdminRaffleForm({
+  raffle,
+  realms = []
+}: {
+  raffle?: RaffleFormValues;
+  realms?: AdminRealmOption[];
+}) {
   const router = useRouter();
   const isEdit = Boolean(raffle?.id);
   const [title, setTitle] = useState(raffle?.title ?? "");
@@ -138,7 +144,7 @@ export default function AdminRaffleForm({ raffle }: { raffle?: RaffleFormValues 
 
       <label className="block md:col-span-2">
         <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">
-          Product line
+          Realm
         </span>
         <select
           value={productLine}
@@ -146,14 +152,14 @@ export default function AdminRaffleForm({ raffle }: { raffle?: RaffleFormValues 
           className={`${fieldClass} bg-panteron-black`}
         >
           <option value="universe">Universe-wide (all raffles page)</option>
-          {PRODUCT_LINE_VALUES.map((line) => (
-            <option key={line} value={line}>
-              {line}
+          {realms.map((realm) => (
+            <option key={realm.slug} value={realm.slug}>
+              {realm.name}
             </option>
           ))}
         </select>
         <span className="mt-2 block text-xs text-zinc-500">
-          Champagne / HOME / water draws also appear on that line&apos;s shop page.
+          Realm draws also appear on that realm&apos;s shop hub (#draws).
         </span>
       </label>
 

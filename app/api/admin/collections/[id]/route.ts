@@ -2,7 +2,6 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { ensureCurrentMember } from "@/lib/members";
 import { parseCollectionCheckoutFromBody } from "@/lib/shop/checkout-rules";
-import { parseProductLineInput } from "@/lib/shop/product-lines";
 import { resolveCollectionRealmFields } from "@/lib/shop/resolve-collection-realm";
 import { revalidateShopPaths } from "@/lib/shop/revalidate-shop-paths";
 import { slugify } from "@/lib/shop/slug";
@@ -29,20 +28,18 @@ export async function PATCH(
     return NextResponse.json({ ok: false, error: "Invalid status." }, { status: 400 });
   }
 
-  const productLineOnly = parseProductLineInput(body.product_line);
-  if (
-    body.product_line !== undefined &&
-    body.product_line !== null &&
-    String(body.product_line).trim() &&
-    !productLineOnly
-  ) {
-    return NextResponse.json({ ok: false, error: "Invalid product line." }, { status: 400 });
-  }
-
   const checkout = parseCollectionCheckoutFromBody(body);
 
   const admin = createAdminClient();
   const { realm_id, product_line } = await resolveCollectionRealmFields(admin, body);
+
+  const realmIdRequest = String(body.realm_id ?? "").trim();
+  if (realmIdRequest && !realm_id) {
+    return NextResponse.json({ ok: false, error: "Invalid realm." }, { status: 400 });
+  }
+  if (realm_id && !product_line) {
+    return NextResponse.json({ ok: false, error: "Could not resolve realm slug." }, { status: 400 });
+  }
 
   const { data, error } = await admin
     .from("collections")

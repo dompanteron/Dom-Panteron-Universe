@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { ensureCurrentMember } from "@/lib/members";
-import { revalidateRafflePaths } from "@/lib/raffles";
+import { revalidateRafflePathsForAllRealms } from "@/lib/raffles";
 import { runRaffleDraw } from "@/lib/raffles/run-draw";
 
 export async function POST(
@@ -20,7 +20,7 @@ export async function POST(
     return NextResponse.json({ ok: false, error: result.error }, { status: 400 });
   }
 
-  for (const path of revalidateRafflePaths()) {
+  for (const path of await revalidateRafflePathsForAllRealms()) {
     revalidatePath(path);
   }
   revalidatePath(`/admin/raffles/${params.id}`);

@@ -1,6 +1,5 @@
-import { raffleLineLabel } from "@/lib/raffles/raffle-line-display";
+import { fetchAdminRealmOptions, realmLabelForSlug } from "@/lib/admin/admin-realm-options";
 import { isLowStock } from "@/lib/shop/low-stock";
-import { PRODUCT_LINE_VALUES, type ProductLine } from "@/lib/shop/product-lines";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type LowStockProductRow = {
@@ -8,11 +7,11 @@ export type LowStockProductRow = {
   title: string;
   slug: string;
   stock_quantity: number;
-  product_line: ProductLine | null;
+  product_line: string | null;
 };
 
 export type LineOpsRow = {
-  line: ProductLine;
+  line: string;
   label: string;
   activeProducts: number;
   pendingOrders: number;
@@ -26,18 +25,18 @@ export type AdminLineOpsSnapshot = {
   totalPendingOrders: number;
 };
 
-function collectionLine(raw: unknown): ProductLine | null {
+function collectionLine(raw: unknown, validSlugs: Set<string>): string | null {
   if (!raw || typeof raw !== "object") {
     return null;
   }
   const line = (raw as { product_line?: string | null }).product_line;
-  if (line && (PRODUCT_LINE_VALUES as readonly string[]).includes(line)) {
-    return line as ProductLine;
+  if (line && validSlugs.has(line)) {
+    return line;
   }
   return null;
 }
 
-function productLineFromRow(products: unknown): ProductLine | null {
+function productLineFromRow(products: unknown, validSlugs: Set<string>): string | null {
   if (!products || typeof products !== "object") {
     return null;
   }
@@ -47,11 +46,13 @@ function productLineFromRow(products: unknown): ProductLine | null {
   }
   const collections = (product as { collections?: unknown }).collections;
   const collection = Array.isArray(collections) ? collections[0] : collections;
-  return collectionLine(collection);
+  return collectionLine(collection, validSlugs);
 }
 
 export async function fetchAdminLineOpsSnapshot(): Promise<AdminLineOpsSnapshot> {
   const admin = createAdminClient();
+  const realms = await fetchAdminRealmOptions();
+  const validSlugs = new Set(realms.map((realm) => realm.slug));
 
   const [productsResult, ordersResult, rafflesResult] = await Promise.all([
     admin
@@ -75,11 +76,11 @@ export async function fetchAdminLineOpsSnapshot(): Promise<AdminLineOpsSnapshot>
     throw new Error(rafflesResult.error.message);
   }
 
-  const lineMap = new Map<ProductLine, LineOpsRow>();
-  for (const line of PRODUCT_LINE_VALUES) {
-    lineMap.set(line, {
-      line,
-      label: raffleLineLabel(line),
+  const lineMap = new Map<string, LineOpsRow>();
+  for (const realm of realms) {
+    lineMap.set(realm.slug, {
+      line: realm.slug,
+      label: realm.name,
       activeProducts: 0,
       pendingOrders: 0,
       lowStock: 0,
@@ -90,16 +91,23 @@ export async function fetchAdminLineOpsSnapshot(): Promise<AdminLineOpsSnapshot>
   const lowStockProducts: LowStockProductRow[] = [];
 
   for (const row of productsResult.data ?? []) {
-    const line = productLineFromRow(row) ?? "fashion";
-    const bucket = lineMap.get(line);
-    if (bucket) {
-      bucket.activeProducts += 1;
+    const line = productLineFromRow(row, validSlugs) ?? "fashion";
+    if (!lineMap.has(line)) {
+      lineMap.set(line, {
+        line,
+        label: realmLabelForSlug(line, realms),
+        activeProducts: 0,
+        pendingOrders: 0,
+        lowStock: 0,
+        activeRaffles: 0
+      });
     }
+    const bucket = lineMap.get(line)!;
+    bucket.activeProducts += 1;
+
     const stock = row.stock_quantity as number | null;
     if (isLowStock(stock)) {
-      if (bucket) {
-        bucket.lowStock += 1;
-      }
+      bucket.lowStock += 1;
       lowStockProducts.push({
         id: row.id as string,
         title: row.title as string,
@@ -113,7 +121,7 @@ export async function fetchAdminLineOpsSnapshot(): Promise<AdminLineOpsSnapshot>
   lowStockProducts.sort((a, b) => a.stock_quantity - b.stock_quantity);
 
   for (const row of ordersResult.data ?? []) {
-    const line = productLineFromRow(row.products) ?? "fashion";
+    const line = productLineFromRow(row.products, validSlugs) ?? "fashion";
     const bucket = lineMap.get(line);
     if (bucket) {
       bucket.pendingOrders += 1;
@@ -121,7 +129,7 @@ export async function fetchAdminLineOpsSnapshot(): Promise<AdminLineOpsSnapshot>
   }
 
   for (const row of rafflesResult.data ?? []) {
-    const line = collectionLine({ product_line: row.product_line }) ?? null;
+    const line = collectionLine({ product_line: row.product_line }, validSlugs);
     if (!line) {
       continue;
     }
@@ -131,8 +139,10 @@ export async function fetchAdminLineOpsSnapshot(): Promise<AdminLineOpsSnapshot>
     }
   }
 
+  const lines = realms.map((realm) => lineMap.get(realm.slug)!);
+
   return {
-    lines: PRODUCT_LINE_VALUES.map((line) => lineMap.get(line)!),
+    lines,
     lowStockProducts: lowStockProducts.slice(0, 8),
     totalPendingOrders: ordersResult.data?.length ?? 0
   };

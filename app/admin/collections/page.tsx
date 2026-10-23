@@ -10,8 +10,13 @@ export const metadata: Metadata = {
   title: "Admin collections | Dom Panteron Universe"
 };
 
-export default async function AdminCollectionsPage() {
+export default async function AdminCollectionsPage({
+  searchParams
+}: {
+  searchParams: { realm?: string };
+}) {
   await requireAdmin();
+  const realmSlug = searchParams.realm?.trim() || null;
   const admin = createAdminClient();
   const [collectionsResult, realmsResult] = await Promise.all([
     admin
@@ -22,8 +27,16 @@ export default async function AdminCollectionsPage() {
   ]);
 
   const { data, error } = collectionsResult;
-  const collections = data ?? [];
+  const allCollections = data ?? [];
   const realms = realmsResult.data ?? [];
+  const realmRow = realmSlug ? realms.find((realm) => realm.slug === realmSlug) : null;
+  const collections = realmSlug
+    ? allCollections.filter(
+        (row) =>
+          row.product_line === realmSlug ||
+          (realmRow?.id && row.realm_id === realmRow.id)
+      )
+    : allCollections;
 
   return (
     <section className="mx-auto max-w-6xl px-6 py-16">
@@ -33,6 +46,16 @@ export default async function AdminCollectionsPage() {
           <h1 className="font-display text-4xl font-semibold">Collections</h1>
           <p className="mt-4 max-w-2xl text-lg text-zinc-400">
             Manage shop collections shown on the public collections page.
+            {realmSlug ? (
+              <>
+                {" "}
+                Filtered to realm{" "}
+                <span className="text-panteron-violet">{realmRow?.name ?? realmSlug}</span>.{" "}
+                <Link href="/admin/collections" className="text-zinc-400 hover:text-white">
+                  Clear filter
+                </Link>
+              </>
+            ) : null}
           </p>
         </div>
         <Link

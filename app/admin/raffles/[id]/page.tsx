@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import AdminRaffleDrawPanel from "@/components/admin/AdminRaffleDrawPanel";
 import AdminRaffleForm from "@/components/AdminRaffleForm";
+import { fetchAdminRealmOptions } from "@/lib/admin/admin-realm-options";
 import { requireAdmin } from "@/lib/members";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -16,11 +17,12 @@ export default async function AdminEditRafflePage({
   params: { id: string };
 }) {
   await requireAdmin();
+  const realms = await fetchAdminRealmOptions();
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("raffles")
     .select(
-      "id, title, subtitle, description, ticket_price, max_entries, ticket_limit_per_user, total_entries, draw_date, status, winner_number, winner_initials, winner_display_name"
+      "id, title, subtitle, description, ticket_price, max_entries, ticket_limit_per_user, total_entries, draw_date, status, product_line, winner_number, winner_initials, winner_display_name"
     )
     .eq("id", params.id)
     .maybeSingle();
@@ -50,7 +52,7 @@ export default async function AdminEditRafflePage({
       </div>
 
       <div className="mt-12 border border-white/10 p-6 sm:p-8">
-        <AdminRaffleForm raffle={data} />
+        <AdminRaffleForm raffle={data} realms={realms} />
         <AdminRaffleDrawPanel
           raffleId={data.id}
           totalEntries={Number(data.total_entries)}
