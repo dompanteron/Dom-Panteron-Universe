@@ -6,10 +6,10 @@ import AdminGalleryUpload from "@/components/admin/AdminGalleryUpload";
 import AdminImageUpload from "@/components/admin/AdminImageUpload";
 import AdminProductAttributesFields from "@/components/admin/AdminProductAttributesFields";
 import { parseProductAttributes } from "@/lib/shop/product-attributes";
-import type { ProductLine } from "@/lib/shop/product-lines";
+import { isProductLine, type ProductLine } from "@/lib/shop/product-lines";
 import { imagesToInput, sizesToInput } from "@/lib/shop/slug";
 
-export type CollectionOption = { id: string; name: string; product_line: ProductLine | null };
+export type CollectionOption = { id: string; name: string; product_line: ProductLine | string | null };
 
 export type ProductFormValues = {
   id?: string;
@@ -35,10 +35,12 @@ const fieldClass =
 
 export default function AdminProductForm({
   product,
-  collections
+  collections,
+  onSaved
 }: {
   product?: ProductFormValues;
   collections: CollectionOption[];
+  onSaved?: () => void;
 }) {
   const router = useRouter();
   const isEdit = Boolean(product?.id);
@@ -68,7 +70,9 @@ export default function AdminProductForm({
   const [message, setMessage] = useState<string | null>(null);
 
   const selectedCollection = collections.find((c) => c.id === collectionId);
-  const productLine = selectedCollection?.product_line ?? null;
+  const rawLine = selectedCollection?.product_line ?? null;
+  const productLine: ProductLine | null =
+    rawLine && isProductLine(rawLine) ? rawLine : null;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -108,6 +112,7 @@ export default function AdminProductForm({
       }
 
       setMessage(isEdit ? "Product saved." : "Product created.");
+      onSaved?.();
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save product");

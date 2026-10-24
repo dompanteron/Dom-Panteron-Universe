@@ -20,10 +20,15 @@ export type RaffleFormValues = {
 
 export default function AdminRaffleForm({
   raffle,
-  realms = []
+  realms = [],
+  lockedRealmSlug,
+  onSaved
 }: {
   raffle?: RaffleFormValues;
   realms?: AdminRealmOption[];
+  /** Fix draw to this realm (realm workspace). */
+  lockedRealmSlug?: string;
+  onSaved?: () => void;
 }) {
   const router = useRouter();
   const isEdit = Boolean(raffle?.id);
@@ -40,8 +45,15 @@ export default function AdminRaffleForm({
   );
   const [status, setStatus] = useState(raffle?.status ?? "draft");
   const [productLine, setProductLine] = useState(
-    raffle?.product_line ? raffle.product_line : "universe"
+    raffle?.product_line
+      ? raffle.product_line
+      : lockedRealmSlug
+        ? lockedRealmSlug
+        : "universe"
   );
+  const lockedRealm = lockedRealmSlug
+    ? realms.find((realm) => realm.slug === lockedRealmSlug)
+    : null;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -67,7 +79,9 @@ export default function AdminRaffleForm({
             ticket_limit_per_user: ticketLimitPerUser.trim() ? ticketLimitPerUser : null,
             draw_date: drawDate,
             status,
-            product_line: productLine === "universe" ? null : productLine
+            product_line:
+              lockedRealmSlug ??
+              (productLine === "universe" ? null : productLine)
           })
         }
       );
@@ -87,10 +101,11 @@ export default function AdminRaffleForm({
         setTicketLimitPerUser("");
         setDrawDate("");
         setStatus("draft");
-        setProductLine("universe");
+        setProductLine(lockedRealmSlug ?? "universe");
       }
 
       setMessage(isEdit ? "Raffle saved." : "Raffle created.");
+      onSaved?.();
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save raffle");
@@ -142,26 +157,36 @@ export default function AdminRaffleForm({
         />
       </label>
 
-      <label className="block md:col-span-2">
-        <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">
-          Realm
-        </span>
-        <select
-          value={productLine}
-          onChange={(event) => setProductLine(event.target.value)}
-          className={`${fieldClass} bg-panteron-black`}
-        >
-          <option value="universe">Universe-wide (all raffles page)</option>
-          {realms.map((realm) => (
-            <option key={realm.slug} value={realm.slug}>
-              {realm.name}
-            </option>
-          ))}
-        </select>
-        <span className="mt-2 block text-xs text-zinc-500">
-          Realm draws also appear on that realm&apos;s shop hub (#draws).
-        </span>
-      </label>
+      {lockedRealmSlug && lockedRealm ? (
+        <div className="md:col-span-2">
+          <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">Realm</p>
+          <p className="mt-2 text-sm text-zinc-300">
+            {lockedRealm.name}{" "}
+            <span className="text-zinc-500">(shows on hub #draws)</span>
+          </p>
+        </div>
+      ) : (
+        <label className="block md:col-span-2">
+          <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">
+            Realm
+          </span>
+          <select
+            value={productLine}
+            onChange={(event) => setProductLine(event.target.value)}
+            className={`${fieldClass} bg-panteron-black`}
+          >
+            <option value="universe">Universe-wide (all raffles page)</option>
+            {realms.map((realm) => (
+              <option key={realm.slug} value={realm.slug}>
+                {realm.name}
+              </option>
+            ))}
+          </select>
+          <span className="mt-2 block text-xs text-zinc-500">
+            Realm draws also appear on that realm&apos;s shop hub (#draws).
+          </span>
+        </label>
+      )}
 
       <label className="block">
         <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">

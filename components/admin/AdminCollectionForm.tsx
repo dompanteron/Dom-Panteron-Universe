@@ -50,10 +50,15 @@ function initialRealmId(
 
 export default function AdminCollectionForm({
   collection,
-  realms = []
+  realms = [],
+  lockedRealmId,
+  onSaved
 }: {
   collection?: CollectionFormValues;
   realms?: AdminRealmOption[];
+  /** When set (realm edit workspace), realm is fixed and hidden. */
+  lockedRealmId?: string;
+  onSaved?: () => void;
 }) {
   const router = useRouter();
   const isEdit = Boolean(collection?.id);
@@ -64,7 +69,12 @@ export default function AdminCollectionForm({
   const [coverUrl, setCoverUrl] = useState(collection?.cover_image_url ?? "");
   const [displayOrder, setDisplayOrder] = useState(String(collection?.display_order ?? 0));
   const [status, setStatus] = useState(collection?.status ?? "draft");
-  const [realmId, setRealmId] = useState(() => initialRealmId(collection, realms));
+  const [realmId, setRealmId] = useState(() =>
+    lockedRealmId ?? initialRealmId(collection, realms)
+  );
+  const lockedRealm = lockedRealmId
+    ? realms.find((realm) => realm.id === lockedRealmId)
+    : null;
   const [requiresAgeConfirm, setRequiresAgeConfirm] = useState(
     collection?.requires_age_confirm ?? false
   );
@@ -91,7 +101,8 @@ export default function AdminCollectionForm({
     setError(null);
     setMessage(null);
 
-    const selectedRealm = realms.find((realm) => realm.id === realmId);
+    const effectiveRealmId = lockedRealmId ?? realmId;
+    const selectedRealm = realms.find((realm) => realm.id === effectiveRealmId);
     const payload = {
       name,
       slug,
@@ -100,7 +111,7 @@ export default function AdminCollectionForm({
       cover_image_url: coverUrl,
       display_order: displayOrder,
       status,
-      realm_id: realmId || null,
+      realm_id: effectiveRealmId || null,
       product_line: selectedRealm?.slug ?? null,
       requires_age_confirm: requiresAgeConfirm,
       allow_multi_quantity: allowMultiQuantity,
@@ -126,6 +137,7 @@ export default function AdminCollectionForm({
       }
 
       setMessage(isEdit ? "Collection saved." : "Collection created.");
+      onSaved?.();
       router.refresh();
       if (!isEdit) {
         setName("");
@@ -181,24 +193,34 @@ export default function AdminCollectionForm({
           <option value="active">active</option>
         </select>
       </label>
-      <label className="block">
-        <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">Realm</span>
-        <select
-          value={realmId}
-          onChange={(e) => setRealmId(e.target.value)}
-          className={`${fieldClass} bg-panteron-black`}
-        >
-          <option value="">Not set</option>
-          {realms.map((realm) => (
-            <option key={realm.id} value={realm.id}>
-              {realm.name} ({realm.slug})
-            </option>
-          ))}
-        </select>
-        <p className="mt-2 text-xs text-zinc-500">
-          Sets which /shop realm hub shows this drop. Checkout rules stay on the collection.
-        </p>
-      </label>
+      {lockedRealmId && lockedRealm ? (
+        <div className="md:col-span-2">
+          <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">Realm</p>
+          <p className="mt-2 text-sm text-zinc-300">
+            {lockedRealm.name}{" "}
+            <span className="text-zinc-500">({lockedRealm.slug})</span>
+          </p>
+        </div>
+      ) : (
+        <label className="block">
+          <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-zinc-500">Realm</span>
+          <select
+            value={realmId}
+            onChange={(e) => setRealmId(e.target.value)}
+            className={`${fieldClass} bg-panteron-black`}
+          >
+            <option value="">Not set</option>
+            {realms.map((realm) => (
+              <option key={realm.id} value={realm.id}>
+                {realm.name} ({realm.slug})
+              </option>
+            ))}
+          </select>
+          <p className="mt-2 text-xs text-zinc-500">
+            Sets which /shop realm hub shows this drop. Checkout rules stay on the collection.
+          </p>
+        </label>
+      )}
       <div className="md:col-span-2 border border-white/10 p-4 sm:p-5">
         <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">Checkout rules</p>
         <label className="mt-4 flex items-center gap-3">
