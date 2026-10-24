@@ -7,12 +7,20 @@ export const metadata: Metadata = {
     "Become a member of Dom Panteron Universe — early access, raffles, and the next wave."
 };
 
+function supabasePublicConfigured() {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+  );
+}
+
 export default function JoinPage({
   searchParams
 }: {
   searchParams?: { error?: string; error_code?: string };
 }) {
   const initialError = searchParams?.error_code ?? searchParams?.error ?? null;
+  const supabaseConfigured = supabasePublicConfigured();
 
   return (
     <main className="text-white">
@@ -38,7 +46,7 @@ export default function JoinPage({
           </div>
 
           <div className="home-rise home-rise-delay-3 rounded-none border border-white/10 bg-panteron-black/50 p-6 sm:p-8">
-            <JoinForm initialError={initialError} />
+            <JoinForm initialError={initialError} supabaseConfigured={supabaseConfigured} />
           </div>
         </div>
       </section>

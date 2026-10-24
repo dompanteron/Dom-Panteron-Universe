@@ -59,7 +59,11 @@ export default async function ShopRealmsPage() {
             <p className="text-center text-sm text-red-400">{loadError}</p>
           ) : realms.length === 0 ? (
             <div className="text-center">
-              <p className="text-zinc-400">Realms are waking up — explore collections for now.</p>
+              <p className="text-zinc-400">
+                No active realms in the database yet. After you run Supabase migrations, seeded
+                realms appear here automatically — or set realms to{" "}
+                <span className="text-zinc-300">active</span> under Admin → Realms.
+              </p>
               <Link
                 href="/collections"
                 className="mt-6 inline-block bg-panteron-purple px-6 py-3 text-sm font-medium text-white hover:bg-panteron-violet"

@@ -12,7 +12,14 @@ const joinErrorMessages: Record<string, string> = {
   otp_expired: "Email link expired. Sign in with your password, or sign up again for a new link."
 };
 
-export default function JoinForm({ initialError }: { initialError?: string | null }) {
+export default function JoinForm({
+  initialError,
+  supabaseConfigured = true
+}: {
+  initialError?: string | null;
+  /** When false (e.g. missing Vercel env), show a message instead of crashing. */
+  supabaseConfigured?: boolean;
+}) {
   const [mode, setMode] = useState<Mode>("signup");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -24,7 +31,16 @@ export default function JoinForm({ initialError }: { initialError?: string | nul
   });
   const [message, setMessage] = useState<string | null>(null);
 
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = useMemo(() => {
+    if (!supabaseConfigured) {
+      return null;
+    }
+    try {
+      return createClient();
+    } catch {
+      return null;
+    }
+  }, [supabaseConfigured]);
 
   async function ensureMember(name?: string) {
     const response = await fetch("/api/members/ensure", {
@@ -46,6 +62,12 @@ export default function JoinForm({ initialError }: { initialError?: string | nul
     setMessage(null);
 
     try {
+      if (!supabase) {
+        throw new Error(
+          "Sign-up is not configured on this deployment. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel, then redeploy."
+        );
+      }
+
       const trimmedEmail = email.trim().toLowerCase();
       const trimmedName = fullName.trim();
 
@@ -110,6 +132,20 @@ export default function JoinForm({ initialError }: { initialError?: string | nul
     } finally {
       setBusy(false);
     }
+  }
+
+  if (!supabaseConfigured || !supabase) {
+    return (
+      <div className="w-full max-w-md">
+        <p className="text-sm text-red-400">
+          Membership sign-up is unavailable right now — Supabase environment variables are missing
+          on this server. Set{" "}
+          <span className="text-zinc-300">NEXT_PUBLIC_SUPABASE_URL</span> and{" "}
+          <span className="text-zinc-300">NEXT_PUBLIC_SUPABASE_ANON_KEY</span> in your hosting
+          dashboard, then redeploy.
+        </p>
+      </div>
+    );
   }
 
   return (

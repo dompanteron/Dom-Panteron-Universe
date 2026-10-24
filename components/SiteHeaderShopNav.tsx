@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { buildShopNavLinks } from "@/lib/shop/realm-nav-links";
 import { productLineHubs } from "@/lib/shop/product-lines";
-import { realmShopPath } from "@/lib/shop/realm-ui";
 import type { RealmRow } from "@/lib/shop/types";
 
 function shopSectionActive(pathname: string) {
@@ -30,8 +30,6 @@ export default function SiteHeaderShopNav({
   const wrapRef = useRef<HTMLDivElement>(null);
   const active = shopSectionActive(pathname);
 
-  const useRealms = shopRealms.length > 0;
-
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
@@ -49,17 +47,7 @@ export default function SiteHeaderShopNav({
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, [open, variant]);
 
-  const realmLinks = useRealms
-    ? shopRealms.map((realm) => ({
-        key: realm.id,
-        href: realmShopPath(realm.slug),
-        label: realm.name
-      }))
-    : productLineHubs.map((hub) => ({
-        key: hub.path,
-        href: hub.path,
-        label: hub.navLabel
-      }));
+  const realmLinks = buildShopNavLinks(shopRealms);
 
   if (variant === "mobile") {
     return (
@@ -115,7 +103,7 @@ export default function SiteHeaderShopNav({
         </span>
       </button>
       {open ? (
-        <div className="absolute left-0 top-full z-50 mt-2 max-h-[min(70vh,24rem)] min-w-[12rem] overflow-y-auto border border-white/10 bg-panteron-black py-2 shadow-xl">
+        <div className="absolute left-0 top-full z-[100] mt-2 max-h-[min(70vh,24rem)] min-w-[12rem] overflow-y-auto border border-white/10 bg-panteron-black py-2 shadow-xl">
           <Link
             href="/shop"
             className="block px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/5 hover:text-white"
